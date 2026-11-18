@@ -1,26 +1,153 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --bg-dark: #04070a;
+  --latveria-green: #00ff88;
+  --doom-emerald: #059669;
+  --doom-dark-emerald: #022c22;
+  --latveria-gold: #eab308;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #04070a;
+  color: #f1f5f9;
+  font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: #00ff88;
+  color: #000;
+}
+
+/* Custom Typography */
+.font-avengers {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  letter-spacing: 0.08em;
+}
+
+.font-doom {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+}
+
+.font-doom-decor {
+  font-family: 'Cinzel Decorative', serif;
+}
+
+.font-tech {
+  font-family: 'Rajdhani', sans-serif;
+}
+
+/* Metallic Chrome Avengers Text */
+.text-avengers-chrome {
+  background: linear-gradient(180deg, #FFFFFF 0%, #E2E8F0 30%, #94A3B8 50%, #475569 85%, #CBD5E1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 8px rgba(0, 255, 136, 0.35));
+}
+
+.text-doom-glow {
+  color: #00ff88;
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.6), 0 0 25px rgba(0, 255, 136, 0.3);
+}
+
+.text-gold-metallic {
+  background: linear-gradient(180deg, #FFFBEB 0%, #FDE047 35%, #CA8A04 70%, #854D0E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Latveria Glowing Card Gradients & Borders */
+.doom-card {
+  background: linear-gradient(135deg, rgba(11, 20, 16, 0.85) 0%, rgba(4, 7, 10, 0.95) 100%);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  box-shadow: 0 4px 25px -5px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(0, 255, 136, 0.15);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.doom-card:hover {
+  border-color: rgba(0, 255, 136, 0.6);
+  box-shadow: 0 10px 35px -5px rgba(0, 255, 136, 0.3), inset 0 1px 1px rgba(0, 255, 136, 0.3);
+  transform: translateY(-4px);
+}
+
+/* Angled Avengers Button */
+.btn-avengers {
+  position: relative;
+  transform: skewX(-8deg);
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.btn-avengers > span {
+  display: inline-block;
+  transform: skewX(8deg);
+}
+
+.btn-avengers:hover {
+  box-shadow: 0 0 25px rgba(0, 255, 136, 0.6);
+  transform: skewX(-8deg) scale(1.03);
+}
+
+/* Background Hex/Grid Pattern */
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 255, 136, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 255, 136, 0.04) 1px, transparent 1px);
+}
+
+/* DOOM ARC REACTOR ANIMATIONS */
+@keyframes reactor-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes reactor-spin-reverse {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+@keyframes reactor-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 40px rgba(0, 255, 136, 0.7), inset 0 0 30px rgba(0, 255, 136, 0.8);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 70px rgba(0, 255, 136, 0.95), inset 0 0 50px rgba(0, 255, 136, 1);
+  }
+}
+
+.animate-reactor-spin {
+  animation: reactor-spin 8s linear infinite;
+}
+
+.animate-reactor-reverse {
+  animation: reactor-spin-reverse 12s linear infinite;
+}
+
+.animate-reactor-pulse {
+  animation: reactor-pulse 2s ease-in-out infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #04070a;
+}
+::-webkit-scrollbar-thumb {
+  background: #064e3b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00ff88;
 }

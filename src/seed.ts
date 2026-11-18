@@ -61,13 +61,13 @@ async function seed() {
     await Settings.findOneAndUpdate(
       { symposiumName: "DATAVERSE" },
       {
-        $setOnInsert: {
+        $set: {
           symposiumName: "DATAVERSE",
-          registrationEnabled: false,
+          registrationEnabled: true,
           maintenanceMode: false,
           theme: {
-            primaryColor: "#0f172a",
-            accentColor: "#22c55e",
+            primaryColor: "#052e16",
+            accentColor: "#10b981",
           },
         },
       },
