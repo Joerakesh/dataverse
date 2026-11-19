@@ -20,7 +20,7 @@ export async function PATCH(request: Request, context: RouteContext<"/api/admin/
     if (!/^[a-f\d]{24}$/i.test(id)) return NextResponse.json({ success: false, message: "Invalid event ID." }, { status: 400 });
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ success: false, message: "Invalid event data.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
-    const event = await Event.findByIdAndUpdate(id, { $set: parsed.data }, { new: true, runValidators: true });
+    const event = await Event.findByIdAndUpdate(id, { $set: parsed.data }, { returnDocument: "after", runValidators: true });
     if (!event) return NextResponse.json({ success: false, message: "Event not found." }, { status: 404 });
     return NextResponse.json({ success: true, event });
   } catch (error) {
@@ -37,7 +37,7 @@ export async function DELETE(_request: Request, context: RouteContext<"/api/admi
     await requirePermission("events:manage");
     const { id } = await context.params;
     if (!/^[a-f\d]{24}$/i.test(id)) return NextResponse.json({ success: false, message: "Invalid event ID." }, { status: 400 });
-    const event = await Event.findByIdAndUpdate(id, { $set: { status: "archived", registrationOpen: false } }, { new: true });
+    const event = await Event.findByIdAndUpdate(id, { $set: { status: "archived", registrationOpen: false } }, { returnDocument: "after" });
     if (!event) return NextResponse.json({ success: false, message: "Event not found." }, { status: 404 });
     return NextResponse.json({ success: true, message: "Event archived." });
   } catch (error) {
