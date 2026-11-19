@@ -141,7 +141,7 @@ export async function sendRegistrationOtpEmail(
   // normalized values and a newline after every canonical header.
   const sortedHeaders = Object.entries(headers).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
   const canonicalHeaders = sortedHeaders
-    .map(([key, value]) => key.toLowerCase() + ":" + value.trim().replace(/\\s+/g, " ") + "\n")
+    .map(([key, value]) => key.toLowerCase() + ":" + value.trim().replace(/\s+/g, " ") + "\n")
     .join("");
   const signedHeaders = sortedHeaders.map(([key]) => key.toLowerCase()).join(";");
   const canonicalRequest = [
