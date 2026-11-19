@@ -28,7 +28,7 @@ async function reserveDarkQuestTeam(collegeKey: string) {
   const existing = await EventCollegeQuota.findOneAndUpdate(
     { eventSlug: "dark-quest-blindfold-clues", collegeKey, teamCount: { $lt: 2 } },
     { $inc: { teamCount: 1 } },
-    { new: true },
+    { returnDocument: "after" },
   );
   if (existing) return true;
 
@@ -44,7 +44,7 @@ async function reserveDarkQuestTeam(collegeKey: string) {
     const retry = await EventCollegeQuota.findOneAndUpdate(
       { eventSlug: "dark-quest-blindfold-clues", collegeKey, teamCount: { $lt: 2 } },
       { $inc: { teamCount: 1 } },
-      { new: true },
+      { returnDocument: "after" },
     );
     return Boolean(retry);
   }
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
           $expr: { $lt: [{ $size: { $ifNull: ["$eventSlugs", []] } }, 2] },
         },
         { $addToSet: { eventSlugs: event.slug } },
-        { new: true },
+        { returnDocument: "after" },
       );
 
       if (!updated) {

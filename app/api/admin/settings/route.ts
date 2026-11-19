@@ -19,7 +19,7 @@ export async function GET() {
     const settings = await Settings.findOneAndUpdate(
       { symposiumName: "DATAVERSE" },
       { $setOnInsert: { symposiumName: "DATAVERSE", registrationEnabled: false, maintenanceMode: false } },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     ).lean();
     const status = await getPublicRegistrationStatus();
 
@@ -62,7 +62,7 @@ export async function PATCH(request: Request) {
     const settings = await Settings.findOneAndUpdate(
       { symposiumName: "DATAVERSE" },
       { $set: update, $setOnInsert: { symposiumName: "DATAVERSE" } },
-      { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: "after", runValidators: true, setDefaultsOnInsert: true },
     ).lean();
 
     const status = await getPublicRegistrationStatus();

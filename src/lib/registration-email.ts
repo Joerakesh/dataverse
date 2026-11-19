@@ -49,11 +49,11 @@ export async function sendRegistrationOtpEmail(
   purpose: RegistrationOtpPurpose,
   participantName?: string,
 ) {
-  const region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION;
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-  const sessionToken = process.env.AWS_SESSION_TOKEN;
-  const fromEmail = process.env.SES_FROM_EMAIL;
+  const region = (process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION)?.trim();
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY?.trim();
+  const sessionToken = process.env.AWS_SESSION_TOKEN?.trim();
+  const fromEmail = process.env.SES_FROM_EMAIL?.trim();
 
   if (!region || !accessKeyId || !secretAccessKey || !fromEmail) {
     throw new Error("SES_EMAIL_PROVIDER_NOT_CONFIGURED");
@@ -137,14 +137,19 @@ export async function sendRegistrationOtpEmail(
   };
   if (sessionToken) headers["x-amz-security-token"] = sessionToken;
 
-  const sortedHeaders = Object.entries(headers).sort(([a], [b]) => a.localeCompare(b));
-  const canonicalHeaders = sortedHeaders.map(([key, value]) => key.toLowerCase() + ":" + value.trim() + "\n").join("");
+  // SigV4 requires headers in bytewise alphabetical order, with
+  // normalized values and a newline after every canonical header.
+  const sortedHeaders = Object.entries(headers).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+  const canonicalHeaders = sortedHeaders
+    .map(([key, value]) => key.toLowerCase() + ":" + value.trim().replace(/\s+/g, " ") + "\n")
+    .join("");
   const signedHeaders = sortedHeaders.map(([key]) => key.toLowerCase()).join(";");
   const canonicalRequest = [
     "POST",
     "/v2/email/outbound-emails",
     "",
-    canonicalHeaders + signedHeaders,
+    canonicalHeaders,
+    signedHeaders,
     bodyHash,
   ].join("\n");
   const scope = dateStamp + "/" + region + "/ses/aws4_request";
