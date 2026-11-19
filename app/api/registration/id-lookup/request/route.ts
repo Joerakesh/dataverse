@@ -35,6 +35,7 @@ export async function POST(request: Request) {
 
     const recent = await RegistrationOtp.findOne({
       mobile,
+      purpose: "id-lookup",
       createdAt: { $gt: new Date(Date.now() - 60 * 1000) },
     }).lean();
     if (recent) return NextResponse.json({ success: false, message: "Please wait a minute before requesting another code." }, { status: 429 });
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
     const otpHash = hashRegistrationOtp(otp);
     await RegistrationOtp.create({
       mobile,
+      purpose: "id-lookup",
       requestIpHash,
       otpHash,
       attempts: 0,
@@ -53,7 +55,7 @@ export async function POST(request: Request) {
     try {
       await sendRegistrationOtp(mobile, otp);
     } catch (error) {
-      await RegistrationOtp.deleteOne({ mobile, otpHash });
+      await RegistrationOtp.deleteOne({ mobile, purpose: "id-lookup", otpHash });
       if (error instanceof Error && error.message === "SMS_PROVIDER_NOT_CONFIGURED") {
         return NextResponse.json({ success: false, message: "ID lookup is enabled, but SMS delivery has not been configured yet. Please contact the organisers." }, { status: 503 });
       }

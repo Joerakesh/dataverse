@@ -1,9 +1,9 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Bot, Check, Clock3, Loader2, MapPin, MessageCircle, Pencil, Phone, Send, ShieldCheck, Sparkles, Users, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bot, Check, Loader2, Pencil, Phone, Send, ShieldCheck, Users, X } from "lucide-react";
 
 type CollegeSuggestion = { name: string; city: string; district: string; category: string };
 type ParticipantProfile = { name: string; mobile: string; college: string; city: string; department: string };
@@ -58,7 +58,7 @@ async function readJson(response: Response) {
 }
 
 export default function RegistrationChatbot() {
-  const [mode, setMode] = useState<"welcome" | "chat" | "events" | "lookup-mobile" | "lookup-otp" | "lookup-done">("welcome");
+  const [mode, setMode] = useState<"welcome" | "chat" | "events" | "login-mobile" | "login-otp" | "lookup-mobile" | "lookup-otp" | "lookup-done">("welcome");
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<ParticipantProfile>({
     college: "", city: "", department: "", name: "", mobile: "",
@@ -69,7 +69,7 @@ export default function RegistrationChatbot() {
   const [profileEditorBusy, setProfileEditorBusy] = useState(false);
   const [profileFieldsLocked, setProfileFieldsLocked] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: "welcome-message", role: "assistant", text: "Welcome to DATAVERSE 2K26! I’m your registration assistant. Let’s get you ready for the fest." },
+    { id: "welcome-message", role: "assistant", text: "Welcome to DATAVERSE 2K26! I’m your registration assistant. Start registration here, or type “login” to access your existing participant profile from this device." },
   ]);
   const [answer, setAnswer] = useState("");
   const [intentText, setIntentText] = useState("");
@@ -78,7 +78,7 @@ export default function RegistrationChatbot() {
   const [events, setEvents] = useState<EventCard[]>([]);
   const [registrationOpen, setRegistrationOpen] = useState(false);
   const [registeredEventSlugs, setRegisteredEventSlugs] = useState<string[]>([]);
-  const [status, setStatus] = useState({ idLookupEnabled: false, idLookupEnabledAt: null as string | null });
+  const [status, setStatus] = useState({ idLookupEnabled: false });
   const [selectedEvent, setSelectedEvent] = useState<EventCard | null>(null);
   const [showRulesFor, setShowRulesFor] = useState<EventCard | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -89,7 +89,7 @@ export default function RegistrationChatbot() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [hydrated, setHydrated] = useState(false);
-  const listEndRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const addMessage = useCallback((role: ChatMessage["role"], text: string) => {
     setMessages((current) => [...current, makeMessage(role, text)]);
@@ -123,10 +123,7 @@ export default function RegistrationChatbot() {
         const statusData = await readJson(statusResponse);
         if (!active) return;
         setRegistrationOpen(Boolean(statusData.registrationOpen));
-        setStatus({
-          idLookupEnabled: Boolean(statusData.idLookupEnabled),
-          idLookupEnabledAt: statusData.idLookupEnabledAt ?? null,
-        });
+        setStatus({ idLookupEnabled: Boolean(statusData.idLookupEnabled) });
 
         if (profileResponse.ok) {
           const profileData = await readJson(profileResponse);
@@ -177,8 +174,10 @@ export default function RegistrationChatbot() {
   }, [draft, step, messages, hydrated, profile]);
 
   useEffect(() => {
-    listEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, mode, events]);
+    const viewport = chatScrollRef.current;
+    if (!viewport) return;
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+  }, [messages, mode, events, suggestions]);
 
   useEffect(() => {
     if (mode !== "chat" || step !== 0 || answer.trim().length < 2) {
@@ -215,6 +214,15 @@ export default function RegistrationChatbot() {
     ]);
   };
 
+  const startLogin = (message = "Login") => {
+    setError("");
+    setLookupMobile("");
+    setOtp("");
+    setMode("login-mobile");
+    addMessage("user", message);
+    appendAssistant("Welcome back! Enter the mobile number you used when registering for DATAVERSE. I’ll send a one-time verification code to that number.");
+  };
+
   const startIdLookup = () => {
     setError("");
     setLookupMobile("");
@@ -224,7 +232,7 @@ export default function RegistrationChatbot() {
     appendAssistant("I can help with that. Enter the mobile number you used during registration. I’ll send a verification code before showing the ID.");
   };
 
-  const loadEvents = async (participant: ParticipantProfile, hasExistingEventRegistrations = false) => {
+  const loadEvents = async (participant: ParticipantProfile, hasExistingEventRegistrations = false, welcomeMessage?: string) => {
     setProfileFieldsLocked(hasExistingEventRegistrations);
     setProfile(participant);
     setDraft(participant);
@@ -241,7 +249,7 @@ export default function RegistrationChatbot() {
       setRegisteredEventSlugs(myEventsData.registeredEventSlugs ?? []);
     }
     setMode("events");
-    appendAssistant("Thanks, " + participant.name + "! Your participant profile is saved. Please review the details shown below. You can edit them before choosing an event.");
+    appendAssistant(welcomeMessage ?? ("Thanks, " + participant.name + "! Your participant profile is saved. Please review the details shown below. You can edit them before choosing an event."));
   };
 
   const openProfileEditor = () => {
@@ -426,6 +434,59 @@ export default function RegistrationChatbot() {
     }
   };
 
+  const requestLoginOtp = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    const mobile = normalizeTeamMobile(lookupMobile);
+    if (!/^\d{10}$/.test(mobile)) {
+      setError("Enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+
+    addMessage("user", "Use my registered mobile number ending in " + mobile.slice(-4) + ".");
+    setBusy(true);
+    try {
+      const response = await fetch("/api/registration/login/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile }),
+      });
+      const data = await readJson(response);
+      setLookupMobile(mobile);
+      setMode("login-otp");
+      appendAssistant(data.message + " Enter the six-digit code below. It expires in five minutes.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to start participant login.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const verifyLoginOtp = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      const response = await fetch("/api/registration/login/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ mobile: lookupMobile, otp }),
+      });
+      const data = await readJson(response);
+      setOtp("");
+      await loadEvents(
+        data.participant as ParticipantProfile,
+        Boolean(data.hasEventRegistrations),
+        "You’re securely logged in on this device. Welcome back, " + data.participant.name + "! Your saved participant profile and event registrations are ready.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to verify participant login.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const requestOtp = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
@@ -474,6 +535,11 @@ export default function RegistrationChatbot() {
     if (!query) return;
     setIntentText("");
     const normalized = query.toLowerCase();
+    if (/\b(log\s?in|sign[\s-]?in|switch account)\b/i.test(normalized)) {
+      startLogin(query);
+      return;
+    }
+
     const asksForId = /\b(id|identity|registration number)\b/i.test(normalized)
       && /(unique|person|participant|my|need|want|show|find|get|retrieve)/i.test(normalized);
 
@@ -509,17 +575,12 @@ export default function RegistrationChatbot() {
     setRevealedPersonId("");
   };
 
-  const dateLabel = useMemo(() => {
-    if (!status.idLookupEnabledAt) return "";
-    return new Date(status.idLookupEnabledAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
-  }, [status.idLookupEnabledAt]);
-
   return (
-    <main className="min-h-screen bg-[#04070a] text-slate-100 relative overflow-hidden">
+    <main className="fixed inset-0 z-40 flex h-[100dvh] w-full min-h-0 flex-col overflow-hidden bg-[#04070a] text-slate-100">
       <div className="absolute inset-0 bg-grid-pattern opacity-50 pointer-events-none" />
       <div className="absolute -top-48 left-1/2 -translate-x-1/2 h-[500px] w-[700px] rounded-full bg-emerald-500/10 blur-[150px] pointer-events-none" />
-      <header className="relative z-10 border-b border-emerald-500/20 bg-[#04070a]/90 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      <header className="relative z-10 shrink-0 border-b border-emerald-500/20 bg-[#04070a]/95 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           <Link href="/" className="inline-flex items-center gap-3 text-slate-300 hover:text-emerald-300 transition-colors">
             <ArrowLeft size={18}/>
             <span className="font-tech font-bold uppercase tracking-wider text-sm">Back to DATAVERSE</span>
@@ -531,18 +592,10 @@ export default function RegistrationChatbot() {
         </div>
       </header>
 
-      <section className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 py-8 sm:py-12">
-        <div className="text-center mb-7">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-[10px] font-tech font-bold tracking-[0.22em] text-emerald-300 uppercase">
-            <Sparkles size={13}/> {mode === "events" ? "Your participant profile" : "Participant registration"}
-          </div>
-          <h1 className="font-avengers text-4xl sm:text-6xl text-avengers-chrome italic tracking-wider mt-3">DATAVERSE ASSISTANT</h1>
-          <p className="font-tech text-sm sm:text-base text-slate-400 mt-2">Your guided registration desk for 4 December 2026 · Centenary Building</p>
-        </div>
-
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_260px] gap-5 items-start">
-          <div className="doom-card rounded-2xl border border-emerald-500/30 overflow-hidden shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
-            <div className="px-4 sm:px-5 py-4 bg-gradient-to-r from-emerald-950/90 to-slate-950/90 border-b border-emerald-500/20 flex items-center gap-3">
+      <section className="relative z-10 flex w-full min-h-0 flex-1 flex-col px-0 py-0">
+        <div className="doom-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-none border-0 shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex shrink-0 items-center gap-3 border-b border-emerald-500/20 bg-gradient-to-r from-emerald-950/90 to-slate-950/90 px-4 py-3 sm:px-6">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-400/40 grid place-items-center text-emerald-300">
                 <Bot size={22}/>
               </div>
@@ -555,7 +608,7 @@ export default function RegistrationChatbot() {
               </span>
             </div>
 
-            <div className="h-[58vh] min-h-[420px] max-h-[680px] overflow-y-auto p-4 sm:p-6 space-y-4 bg-[#050b0a]/90">
+            <div ref={chatScrollRef} className="flex min-h-0 flex-1 flex-col gap-4 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-6 bg-[#050b0a]/90">
               {messages.map((message) => (
                 <div key={message.id} className={"flex " + (message.role === "user" ? "justify-end" : "justify-start")}>
                   <div className={"max-w-[88%] sm:max-w-[80%] rounded-2xl px-4 py-3 text-sm font-tech leading-relaxed " +
@@ -573,6 +626,9 @@ export default function RegistrationChatbot() {
                   <button onClick={startRegistration} disabled={!registrationOpen} className="px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-black font-avengers tracking-wider text-lg flex items-center justify-center gap-2 hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed">
                     {registrationOpen ? "Start registration" : "Registration closed"} <ArrowRight size={16}/>
                   </button>
+                  <button onClick={() => startLogin()} className="px-4 py-3 rounded-xl bg-slate-900 border border-emerald-500/40 text-emerald-300 font-tech font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-950/40 transition">
+                    <Phone size={15}/> Login
+                  </button>
                   {status.idLookupEnabled && (
                     <button onClick={startIdLookup} className="px-4 py-3 rounded-xl bg-slate-900 border border-emerald-500/40 text-emerald-300 font-tech font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-950/40 transition">
                       Retrieve my unique ID <ShieldCheck size={15}/>
@@ -581,20 +637,7 @@ export default function RegistrationChatbot() {
                 </div>
               )}
 
-              {(mode === "welcome" || mode === "events") && (
-                <form onSubmit={handleGeneralMessage} className="ml-1 flex items-center gap-2">
-                  <input
-                    value={intentText}
-                    onChange={(event) => setIntentText(event.target.value)}
-                    placeholder="Ask DATAVERSE bot... e.g. I need my unique ID"
-                    maxLength={160}
-                    className="min-w-0 flex-1 rounded-xl border border-emerald-500/25 bg-[#07100d] px-3 py-2.5 text-xs font-tech text-slate-100 placeholder:text-slate-600 outline-none focus:border-emerald-500"
-                  />
-                  <button type="submit" disabled={!intentText.trim()} className="h-10 w-10 grid place-items-center rounded-xl border border-emerald-500/30 bg-emerald-950/50 text-emerald-300 disabled:opacity-40" aria-label="Send message">
-                    <Send size={15}/>
-                  </button>
-                </form>
-              )}
+
 
               {mode === "chat" && (
                 <div className="ml-1 text-[10px] text-emerald-400 font-tech uppercase tracking-widest">
@@ -636,7 +679,7 @@ export default function RegistrationChatbot() {
                   <div className={"rounded-xl px-4 py-3 border text-sm font-tech " + (registrationOpen ? "bg-emerald-950/30 border-emerald-500/25 text-emerald-100" : "bg-amber-950/30 border-amber-500/30 text-amber-100")}>
                     {registrationOpen ? "Registration is open. Choose an event below." : "Online registration is currently closed. You can still review the event details and rules."}
                   </div>
-                  <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                     {events.map((event) => (
                       <div key={event.slug} className="rounded-xl overflow-hidden border border-emerald-500/20 bg-slate-950/80 hover:border-emerald-400/50 transition-colors">
                         <div className="relative h-28 bg-slate-900">
@@ -668,13 +711,13 @@ export default function RegistrationChatbot() {
                   <button onClick={restartLookup} className="mt-3 text-xs font-tech font-bold uppercase text-emerald-300 hover:text-emerald-200">Continue <ArrowRight size={12} className="inline"/></button>
                 </div>
               )}
-              <div ref={listEndRef}/>
+
             </div>
 
             {mode === "chat" && (
-              <form onSubmit={submitAnswer} className="p-3 sm:p-4 border-t border-emerald-500/20 bg-slate-950">
+              <form onSubmit={submitAnswer} className="shrink-0 border-t border-emerald-500/20 bg-slate-950 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:px-5">
                 {step === 0 && suggestions.length > 0 && (
-                  <div className="mb-2 rounded-xl border border-emerald-500/25 bg-[#07120e] overflow-hidden max-h-52 overflow-y-auto">
+                  <div className="mx-auto mb-2 w-full max-w-4xl rounded-xl border border-emerald-500/25 bg-[#07120e] overflow-hidden max-h-52 overflow-y-auto">
                     {suggestions.map((college) => (
                       <button type="button" key={college.name} onClick={() => chooseCollege(college)} className="w-full text-left px-3 py-2.5 hover:bg-emerald-950/50 border-b border-slate-800/70 last:border-0">
                         <div className="text-sm font-tech text-slate-100">{college.name}</div>
@@ -691,9 +734,9 @@ export default function RegistrationChatbot() {
                   </div>
                 )}
                 {step === 0 && answer.trim().length >= 2 && (
-                  <button type="button" onClick={() => { setSelectedCollege(null); setSuggestions([]); }} className="mb-2 text-[10px] font-tech text-emerald-300 underline underline-offset-2">My college is not listed — enter it manually</button>
+                  <button type="button" onClick={() => { setSelectedCollege(null); setSuggestions([]); }} className="mx-auto mb-2 block w-full max-w-4xl text-[10px] font-tech text-emerald-300 underline underline-offset-2">My college is not listed — enter it manually</button>
                 )}
-                <div className="flex items-center gap-2">
+                <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
                   <input
                     value={answer}
                     onChange={(event) => setAnswer(event.target.value)}
@@ -704,58 +747,75 @@ export default function RegistrationChatbot() {
                     className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 placeholder:text-slate-600 outline-none focus:border-emerald-500"
                     disabled={busy}
                     autoComplete="off"
+                    enterKeyHint="send"
                   />
-                  <button type="submit" disabled={busy || !answer.trim()} className="h-11 w-12 grid place-items-center rounded-xl bg-emerald-500 text-black disabled:opacity-40 hover:bg-emerald-400 transition-colors">
+                  <button type="submit" disabled={busy || !answer.trim()} className="h-11 w-12 shrink-0 grid place-items-center rounded-xl bg-emerald-500 text-black disabled:opacity-40 hover:bg-emerald-400 transition-colors">
                     {busy ? <Loader2 size={18} className="animate-spin"/> : <Send size={17}/>}
                   </button>
                 </div>
-                {error && <p className="text-xs font-tech text-red-400 mt-2">{error}</p>}
+                {error && <p className="mx-auto mt-2 block w-full max-w-4xl text-xs font-tech text-red-400">{error}</p>}
               </form>
             )}
 
             {mode === "lookup-mobile" && (
-              <form onSubmit={requestOtp} className="p-3 sm:p-4 border-t border-emerald-500/20 bg-slate-950">
-                <div className="flex items-center gap-2">
-                  <Phone size={16} className="text-emerald-400"/>
-                  <input value={lookupMobile} onChange={(event) => setLookupMobile(event.target.value)} type="tel" inputMode="tel" maxLength={14} placeholder="Registered 10-digit mobile number" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500"/>
-                  <button type="submit" disabled={busy || !lookupMobile.trim()} className="h-11 px-4 rounded-xl bg-emerald-500 text-black font-tech font-bold text-xs uppercase disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Send OTP"}</button>
+              <form onSubmit={requestOtp} className="shrink-0 border-t border-emerald-500/20 bg-slate-950 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:px-5">
+                <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
+                  <Phone size={17} className="shrink-0 text-emerald-400"/>
+                  <input value={lookupMobile} onChange={(event) => setLookupMobile(event.target.value)} type="tel" inputMode="tel" autoComplete="tel" maxLength={14} placeholder="Registered 10-digit mobile number" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500" disabled={busy}/>
+                  <button type="submit" disabled={busy || !lookupMobile.trim()} className="h-11 shrink-0 rounded-xl bg-emerald-500 px-4 text-xs font-tech font-bold uppercase text-black disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Send OTP"}</button>
                 </div>
-                {error && <p className="text-xs font-tech text-red-400 mt-2">{error}</p>}
+                {error && <p className="mx-auto mt-2 w-full max-w-4xl text-xs font-tech text-red-400">{error}</p>}
               </form>
             )}
 
             {mode === "lookup-otp" && (
-              <form onSubmit={verifyOtp} className="p-3 sm:p-4 border-t border-emerald-500/20 bg-slate-950">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-emerald-400"/>
+              <form onSubmit={verifyOtp} className="shrink-0 border-t border-emerald-500/20 bg-slate-950 px-3 py-3 sm:px-5">
+                <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
+                  <ShieldCheck size={17} className="shrink-0 text-emerald-400"/>
                   <input value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} type="text" inputMode="numeric" maxLength={6} placeholder="6-digit verification code" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech tracking-[0.3em] text-slate-100 outline-none focus:border-emerald-500"/>
-                  <button type="submit" disabled={busy || otp.length !== 6} className="h-11 px-4 rounded-xl bg-emerald-500 text-black font-tech font-bold text-xs uppercase disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Verify"}</button>
+                  <button type="submit" disabled={busy || otp.length !== 6} className="h-11 shrink-0 rounded-xl bg-emerald-500 px-4 text-xs font-tech font-bold uppercase text-black disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Verify"}</button>
                 </div>
-                {error && <p className="text-xs font-tech text-red-400 mt-2">{error}</p>}
+                {error && <p className="mx-auto mt-2 w-full max-w-4xl text-xs font-tech text-red-400">{error}</p>}
+              </form>
+            )}
+
+            {mode === "login-mobile" && (
+              <form onSubmit={requestLoginOtp} className="shrink-0 border-t border-emerald-500/20 bg-slate-950 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:px-5">
+                <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
+                  <Phone size={17} className="shrink-0 text-emerald-400"/>
+                  <input value={lookupMobile} onChange={(event) => setLookupMobile(event.target.value)} type="tel" inputMode="tel" autoComplete="tel" maxLength={14} placeholder="Your registered 10-digit mobile number" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500" disabled={busy}/>
+                  <button type="submit" disabled={busy || !lookupMobile.trim()} className="h-11 shrink-0 rounded-xl bg-emerald-500 px-4 text-xs font-tech font-bold uppercase text-black disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Send code"}</button>
+                </div>
+                {error && <p className="mx-auto mt-2 w-full max-w-4xl text-xs font-tech text-red-400">{error}</p>}
+              </form>
+            )}
+
+            {mode === "login-otp" && (
+              <form onSubmit={verifyLoginOtp} className="shrink-0 border-t border-emerald-500/20 bg-slate-950 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:px-5">
+                <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
+                  <ShieldCheck size={17} className="shrink-0 text-emerald-400"/>
+                  <input value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="6-digit login code" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech tracking-[0.3em] text-slate-100 outline-none focus:border-emerald-500" disabled={busy}/>
+                  <button type="submit" disabled={busy || otp.length !== 6} className="h-11 shrink-0 rounded-xl bg-emerald-500 px-4 text-xs font-tech font-bold uppercase text-black disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Verify & login"}</button>
+                </div>
+                <div className="mx-auto mt-2 w-full max-w-4xl flex items-center justify-between gap-3">
+                  {error ? <p className="text-xs font-tech text-red-400">{error}</p> : <span className="text-[10px] font-tech text-slate-500">Code expires in five minutes.</span>}
+                  <button type="button" onClick={() => { setMode("login-mobile"); setOtp(""); setError(""); }} className="shrink-0 text-[10px] font-tech font-bold uppercase tracking-wider text-emerald-300 hover:text-emerald-200">Change mobile</button>
+                </div>
+              </form>
+            )}
+
+            {(mode === "welcome" || mode === "events") && (
+              <form onSubmit={handleGeneralMessage} className="shrink-0 border-t border-emerald-500/20 bg-slate-950 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:px-5">
+                <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
+                  <input value={intentText} onChange={(event) => setIntentText(event.target.value)} placeholder="Message DATAVERSE… try “login” or ask a question" maxLength={160} className="min-w-0 flex-1 rounded-xl border border-emerald-500/25 bg-[#07100d] px-4 py-3 text-sm font-tech text-slate-100 placeholder:text-slate-600 outline-none focus:border-emerald-500"/>
+                  <button type="submit" disabled={!intentText.trim()} className="h-11 w-11 shrink-0 grid place-items-center rounded-xl border border-emerald-500/30 bg-emerald-950/50 text-emerald-300 disabled:opacity-40" aria-label="Send message"><Send size={16}/></button>
+                </div>
+                {error && <p className="mx-auto mt-2 w-full max-w-4xl text-xs font-tech text-red-400">{error}</p>}
               </form>
             )}
           </div>
 
-          <aside className="space-y-3">
-            <div className="doom-card p-4 rounded-2xl border border-emerald-500/25">
-              <div className="flex items-center gap-2 text-emerald-300 font-avengers text-xl tracking-wider mb-3"><Clock3 size={17}/> FEST DETAILS</div>
-              <div className="space-y-3 text-xs font-tech">
-                <div><div className="text-slate-500 uppercase tracking-wider text-[9px]">Date & time</div><div className="text-slate-200 font-bold">4 December 2026 · 9:00 AM</div></div>
-                <div><div className="text-slate-500 uppercase tracking-wider text-[9px]">Venue</div><div className="text-slate-200 font-bold flex items-center gap-1"><MapPin size={12} className="text-emerald-400"/> Centenary Building, Loyola College</div></div>
-                <div><div className="text-slate-500 uppercase tracking-wider text-[9px]">Registration</div><div className="text-emerald-300 font-bold">Absolutely FREE</div></div>
-              </div>
-            </div>
-            <div className="doom-card p-4 rounded-2xl border border-emerald-500/25">
-              <div className="flex items-center gap-2 text-emerald-300 font-avengers text-xl tracking-wider mb-2"><ShieldCheck size={17}/> PRIVACY</div>
-              <p className="text-xs font-tech text-slate-400 leading-relaxed">Your person ID and event registration references are stored privately. The registration assistant will not display them during initial registration.</p>
-            </div>
-            <div className="doom-card p-4 rounded-2xl border border-emerald-500/25">
-              <div className="flex items-center gap-2 text-emerald-300 font-avengers text-xl tracking-wider mb-2"><MessageCircle size={17}/> NEED HELP?</div>
-              <p className="text-xs font-tech text-slate-400 leading-relaxed">For registration assistance, contact the organising team through the contacts listed in the rulebook.</p>
-              <a href="/DATAVERSE-RULEBOOK.pdf" target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-300 font-tech font-bold hover:text-emerald-200">Read event rulebook <ArrowRight size={12}/></a>
-            </div>
-            {status.idLookupEnabled && dateLabel && <div className="text-[10px] font-tech text-slate-600 text-center">ID lookup enabled since {dateLabel}</div>}
-          </aside>
+
         </div>
       </section>
 
