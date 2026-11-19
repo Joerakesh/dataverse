@@ -21,5 +21,4 @@ const EventRegistrationSchema = new Schema({
   status: { type: String, enum: ["confirmed", "cancelled"], default: "confirmed", index: true },
 }, { timestamps: true });
 EventRegistrationSchema.index({ eventSlug: 1, "members.mobile": 1 }, { unique: true, partialFilterExpression: { status: "confirmed" } });
-EventRegistrationSchema.index({ eventSlug: 1, "members.email": 1 }, { partialFilterExpression: { status: "confirmed" } });
 export default models.EventRegistration || model("EventRegistration", EventRegistrationSchema);
