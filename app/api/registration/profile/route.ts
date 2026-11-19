@@ -48,7 +48,7 @@ export async function GET() {
     if (!participant) {
       return NextResponse.json({ success: false, message: "No active registration flow." }, { status: 401 });
     }
-    return NextResponse.json({ success: true, participant: publicParticipant(participant) });
+    return NextResponse.json({ success: true, participant: publicParticipant(participant), hasEventRegistrations: (participant.eventSlugs?.length ?? 0) > 0 });
   } catch (error) {
     console.error("Read registration profile error:", error);
     return NextResponse.json({ success: false, message: "Unable to restore your registration." }, { status: 500 });
@@ -86,6 +86,7 @@ export async function POST(request: Request) {
       success: true,
       message: "Your details have been saved. Choose the events you would like to enter.",
       participant: publicParticipant(result.participant),
+      hasEventRegistrations: (result.participant.eventSlugs?.length ?? 0) > 0,
     }, { status: 201 });
   } catch (error) {
     console.error("Create participant profile error:", error);
