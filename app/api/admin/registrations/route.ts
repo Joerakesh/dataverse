@@ -33,13 +33,14 @@ export async function GET(request: Request) {
         { department: regex },
         { "members.name": regex },
         { "members.mobile": regex },
+        { "members.email": regex },
       ];
     }
 
     const [registrations, matchingTotal, total, confirmed, cancelled, uniqueParticipants, uniqueColleges] = await Promise.all([
       EventRegistration.find(filter)
         .select("registrationReference eventSlug eventName college city department members teamSize status createdAt contactParticipantId")
-        .populate("contactParticipantId", "name mobile")
+        .populate("contactParticipantId", "name mobile email")
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
@@ -69,9 +70,10 @@ export async function GET(request: Request) {
           ? {
               name: "name" in item.contactParticipantId ? item.contactParticipantId.name : "",
               mobile: "mobile" in item.contactParticipantId ? item.contactParticipantId.mobile : "",
+              email: "email" in item.contactParticipantId ? item.contactParticipantId.email : "",
             }
           : null,
-        members: item.members.map((member: { name: string; mobile: string }) => ({ name: member.name, mobile: member.mobile })),
+        members: item.members.map((member: { name: string; mobile: string; email?: string }) => ({ name: member.name, mobile: member.mobile, email: member.email ?? "" })),
       })),
       pagination: {
         page,

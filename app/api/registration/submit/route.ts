@@ -11,6 +11,7 @@ import {
   getPublicRegistrationStatus,
   normalizeIndianMobile,
   normalizeKey,
+  normalizeRegistrationEmail,
 } from "@/src/lib/public-registration";
 import { isEventRegistrationOpen } from "@/src/lib/event-registration-settings";
 
@@ -19,6 +20,7 @@ const schema = z.object({
   members: z.array(z.object({
     name: z.string().trim().min(2).max(100),
     mobile: z.string().trim().min(10).max(20),
+    email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
   })).min(1).max(3),
 });
 
@@ -59,10 +61,13 @@ export async function POST(request: Request) {
     if (!contact) {
       return NextResponse.json({ success: false, message: "Your registration session expired. Please start again." }, { status: 401 });
     }
+    if (!contact.email) {
+      return NextResponse.json({ success: false, message: "Add an email address to your participant profile before registering an event." }, { status: 409 });
+    }
 
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) {
-      return NextResponse.json({ success: false, message: "Please check the team details.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Please check every team member's name, mobile number and email address.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
     const status = await getPublicRegistrationStatus();
@@ -93,20 +98,26 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    const membersWithPhones = parsed.data.members.map((member) => ({
+    const membersWithDetails = parsed.data.members.map((member) => ({
       name: member.name.trim(),
       mobile: normalizeIndianMobile(member.mobile),
+      email: normalizeRegistrationEmail(member.email),
     }));
-    const phoneNumbers = membersWithPhones.map((member) => member.mobile);
+    const phoneNumbers = membersWithDetails.map((member) => member.mobile);
+    const emailAddresses = membersWithDetails.map((member) => member.email);
     if (new Set(phoneNumbers).size !== phoneNumbers.length) {
       return NextResponse.json({ success: false, message: "Each team member must have a different mobile number." }, { status: 400 });
     }
+    if (new Set(emailAddresses).size !== emailAddresses.length) {
+      return NextResponse.json({ success: false, message: "Each team member must have a different email address." }, { status: 400 });
+    }
 
     const resolvedMembers = [];
-    for (const member of membersWithPhones) {
+    for (const member of membersWithDetails) {
       const result = await createOrFindParticipant({
         name: member.name,
         mobile: member.mobile,
+        email: member.email,
         college: contact.college,
         city: contact.city,
         department: contact.department,
@@ -130,6 +141,7 @@ export async function POST(request: Request) {
         participantId: result.participant._id,
         name: result.participant.name,
         mobile: result.participant.mobile,
+        email: result.participant.email,
       });
     }
 
@@ -151,8 +163,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Claim the event slot on each participant atomically. This prevents two parallel
-    // requests from registering the same person for more than two events.
     for (const member of resolvedMembers) {
       const updated = await Participant.findOneAndUpdate(
         {
@@ -193,7 +203,6 @@ export async function POST(request: Request) {
       status: "confirmed",
     });
 
-    // Keep this internal document reference private; it is not returned to the browser.
     void registration;
     claimedParticipantIds = [];
     darkQuestQuotaReserved = false;
@@ -224,7 +233,7 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.message.startsWith("EVENT_LIMIT_REACHED:")) {
       return NextResponse.json({ success: false, message: error.message.split(":").slice(1).join(":") + " has already reached the two-event participation limit." }, { status: 409 });
     }
-    if (error instanceof Error && error.message.includes("mobile number")) {
+    if (error instanceof Error && /mobile number|email address/i.test(error.message)) {
       return NextResponse.json({ success: false, message: error.message }, { status: 400 });
     }
     if (error && typeof error === "object" && "code" in error && error.code === 11000) {

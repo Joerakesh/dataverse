@@ -23,7 +23,7 @@ type EventItem = {
   teamSize: string;
   registrationOpen: boolean;
 };
-type Member = { name: string; mobile: string };
+type Member = { name: string; mobile: string; email: string };
 type Registration = {
   id: string;
   reference: string;
@@ -35,7 +35,7 @@ type Registration = {
   teamSize: number;
   status: "confirmed" | "cancelled";
   createdAt: string;
-  contact: { name: string; mobile: string } | null;
+  contact: { name: string; mobile: string; email: string } | null;
   members: Member[];
 };
 type Summary = { total: number; confirmed: number; cancelled: number; participants: number; colleges: number };
@@ -201,12 +201,14 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
   };
 
   const downloadCsv = () => {
-    const columns = ["Registration reference", "Event", "College", "City", "Department", "Team size", "Status", "Registered at", "Members"];
+    const columns = ["Registration reference", "Event", "College", "City", "Department", "Team size", "Status", "Registered at", "Members", "Member emails", "Registration contact email"];
     const escape = (value: string) => '"' + value.replace(/"/g, '""') + '"';
     const rows = registrations.map((item) => [
       item.reference, item.eventName, item.college, item.city, item.department,
       String(item.teamSize), item.status, new Date(item.createdAt).toISOString(),
       item.members.map((member) => member.name + " (" + member.mobile + ")").join("; "),
+      item.members.map((member) => member.email).filter(Boolean).join("; "),
+      item.contact?.email ?? "",
     ]);
     const csv = [columns, ...rows].map((row) => row.map(escape).join(",")).join("\r\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -320,7 +322,7 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
               <div>
                 <div className="text-[10px] font-tech uppercase tracking-[.2em] text-emerald-400 font-bold">Registration database</div>
                 <h2 className="font-avengers text-2xl sm:text-3xl tracking-wider mt-1">ALL TEAM REGISTRATIONS</h2>
-                <p className="text-xs sm:text-sm font-tech text-slate-500 mt-1">Search by reference, event, college, department, student name or mobile number.</p>
+                <p className="text-xs sm:text-sm font-tech text-slate-500 mt-1">Search by reference, event, college, department, student name, mobile number or email.</p>
               </div>
               <button type="button" onClick={downloadCsv} disabled={registrations.length === 0} className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-xs font-tech font-bold uppercase tracking-wider text-slate-300 hover:border-emerald-500/40 hover:text-emerald-300 disabled:opacity-40">
                 <Download size={15}/> Export current page
@@ -404,13 +406,14 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
                                   <div>
                                     <div className="text-[9px] uppercase tracking-widest text-slate-500 font-tech mb-2">Registered team members</div>
                                     <div className="space-y-2">
-                                      {item.members.map((member) => <div key={member.mobile} className="flex flex-wrap justify-between gap-2 text-xs font-tech"><span className="text-slate-200">{member.name}</span><a className="text-emerald-300 hover:underline" href={"tel:" + member.mobile}>{member.mobile}</a></div>)}
+                                      {item.members.map((member) => <div key={member.mobile} className="flex flex-wrap justify-between gap-2 text-xs font-tech"><span className="text-slate-200">{member.name}</span><div className="flex flex-col items-end"><a className="text-emerald-300 hover:underline" href={"tel:" + member.mobile}>{member.mobile}</a>{member.email && <a className="text-[11px] text-sky-300 hover:underline" href={"mailto:" + member.email}>{member.email}</a>}</div></div>)}
                                     </div>
                                   </div>
                                   <div>
                                     <div className="text-[9px] uppercase tracking-widest text-slate-500 font-tech mb-2">Registration contact</div>
                                     <div className="text-xs font-tech text-slate-200">{item.contact?.name || "Not available"}</div>
                                     {item.contact?.mobile && <a className="text-xs font-tech text-emerald-300 hover:underline" href={"tel:" + item.contact.mobile}>{item.contact.mobile}</a>}
+                                    {item.contact?.email && <a className="block text-xs font-tech text-sky-300 hover:underline" href={"mailto:" + item.contact.email}>{item.contact.email}</a>}
                                   </div>
                                 </div>
                               </td>

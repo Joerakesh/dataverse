@@ -3,6 +3,7 @@ const RegistrationMemberSchema = new Schema({
   participantId: { type: Schema.Types.ObjectId, ref: "Participant", required: true },
   name: { type: String, required: true, trim: true },
   mobile: { type: String, required: true },
+  email: { type: String, required: true, trim: true, lowercase: true },
 }, { _id: false });
 const EventRegistrationSchema = new Schema({
   registrationReference: { type: String, required: true, unique: true, index: true },

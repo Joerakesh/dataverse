@@ -3,11 +3,11 @@ import { timingSafeEqual } from "crypto";
 import { z } from "zod";
 import Participant from "@/models/Participant";
 import RegistrationOtp from "@/models/RegistrationOtp";
-import { createRegistrationFlow, normalizeIndianMobile } from "@/src/lib/public-registration";
-import { hashRegistrationOtp } from "@/src/lib/sms";
+import { createRegistrationFlow } from "@/src/lib/public-registration";
+import { hashRegistrationOtp } from "@/src/lib/registration-email";
 
 const schema = z.object({
-  mobile: z.string().trim().min(10).max(20),
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
   otp: z.string().regex(/^\d{6}$/),
 });
 
@@ -16,12 +16,12 @@ export async function POST(request: Request) {
   try {
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) {
-      return NextResponse.json({ success: false, message: "Enter your mobile number and six-digit verification code." }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Enter your registered email address and six-digit verification code." }, { status: 400 });
     }
 
-    const mobile = normalizeIndianMobile(parsed.data.mobile);
+    const email = parsed.data.email;
     const record = await RegistrationOtp.findOne({
-      mobile,
+      email,
       purpose: "login",
       consumedAt: null,
       expiresAt: { $gt: new Date() },
@@ -39,18 +39,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: "That verification code is incorrect." }, { status: 400 });
     }
 
-    const participant = await Participant.findOne({ mobile });
+    const participant = await Participant.findOne({ email });
     if (!participant) {
       record.consumedAt = new Date();
       await record.save();
-      return NextResponse.json({ success: false, message: "No DATAVERSE participant profile was found for this mobile number." }, { status: 404 });
+      return NextResponse.json({ success: false, message: "No DATAVERSE participant profile was found for this email address." }, { status: 404 });
     }
 
     record.consumedAt = new Date();
     await record.save();
 
-    // Creates a fresh HttpOnly registration session on this browser/device.
-    // Existing sessions on other devices remain active until their 12-hour expiry.
     await createRegistrationFlow(participant._id.toString());
 
     return NextResponse.json({
@@ -59,6 +57,7 @@ export async function POST(request: Request) {
       participant: {
         name: participant.name,
         mobile: participant.mobile,
+        email: participant.email,
         college: participant.college,
         city: participant.city,
         department: participant.department,
