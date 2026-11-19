@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Bot, Check, Loader2, Pencil, Phone, Send, ShieldCheck, Sparkles, Users, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bot, Check, Loader2, Pencil, Phone, Send, ShieldCheck, Users, X } from "lucide-react";
 
 type CollegeSuggestion = { name: string; city: string; district: string; category: string };
 type ParticipantProfile = { name: string; mobile: string; college: string; city: string; department: string };
@@ -69,7 +69,7 @@ export default function RegistrationChatbot() {
   const [profileEditorBusy, setProfileEditorBusy] = useState(false);
   const [profileFieldsLocked, setProfileFieldsLocked] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: "welcome-message", role: "assistant", text: "Welcome to DATAVERSE 2K26! I’m your registration assistant. Let’s get you ready for the fest." },
+    { id: "welcome-message", role: "assistant", text: "Welcome to DATAVERSE 2K26! I’m your registration assistant. Start registration here, or type “login” to access your existing participant profile from this device." },
   ]);
   const [answer, setAnswer] = useState("");
   const [intentText, setIntentText] = useState("");
@@ -592,8 +592,8 @@ export default function RegistrationChatbot() {
         </div>
       </header>
 
-      <section className="relative z-10 mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col px-2 py-2 sm:px-5 sm:py-4">
-        <div className="doom-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-emerald-500/30 shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
+      <section className="relative z-10 flex w-full min-h-0 flex-1 flex-col px-0 py-0">
+        <div className="doom-card flex min-h-0 flex-1 flex-col overflow-hidden rounded-none border-0 shadow-[0_20px_80px_rgba(0,0,0,0.45)]">
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="flex shrink-0 items-center gap-3 border-b border-emerald-500/20 bg-gradient-to-r from-emerald-950/90 to-slate-950/90 px-4 py-3 sm:px-6">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-400/40 grid place-items-center text-emerald-300">
