@@ -71,7 +71,7 @@ export async function GET(request: Request) {
               mobile: "mobile" in item.contactParticipantId ? item.contactParticipantId.mobile : "",
             }
           : null,
-        members: item.members.map((member) => ({ name: member.name, mobile: member.mobile })),
+        members: item.members.map((member: { name: string; mobile: string }) => ({ name: member.name, mobile: member.mobile })),
       })),
       pagination: {
         page,
