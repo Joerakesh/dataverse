@@ -165,12 +165,20 @@ export async function DELETE(
       return NextResponse.json({ success: false, message: "Invalid participant ID." }, { status: 400 });
     }
 
-    const registration = await EventRegistration.findById(id);
+    // Use a lean read and atomic update operators below. Calling document.save()
+    // validates every embedded member and fails for older registrations whose
+    // members predate the required email field.
+    const registration = await EventRegistration.findById(id).lean();
     if (!registration || registration.status !== "confirmed") {
       return NextResponse.json({ success: false, message: "Active registration not found." }, { status: 404 });
     }
 
+    const versionFilter = typeof registration.__v === "number"
+      ? { __v: registration.__v }
+      : { $or: [{ __v: { $exists: false } }, { __v: null }] };
+
     if (parsed.data.participantId) {
+      const participantId = new Types.ObjectId(parsed.data.participantId);
       const member = registration.members.find(
         (item: { participantId: Types.ObjectId }) => item.participantId.toString() === parsed.data.participantId,
       );
@@ -190,28 +198,62 @@ export async function DELETE(
         }, { status: 409 });
       }
 
-      registration.members = remainingMembers;
-      registration.teamSize = remainingMembers.length;
-      if (registration.contactParticipantId.toString() === parsed.data.participantId) {
-        registration.set("contactParticipantId", remainingMembers[0].participantId);
+      const update: Record<string, unknown> = {
+        $pull: { members: { participantId } },
+        $inc: { teamSize: -1, __v: 1 },
+      };
+      if (registration.contactParticipantId?.toString() === parsed.data.participantId) {
+        update.$set = { contactParticipantId: remainingMembers[0].participantId };
       }
-      await registration.save();
+
+      const result = await EventRegistration.updateOne(
+        {
+          _id: registration._id,
+          status: "confirmed",
+          teamSize: { $gt: minimumTeamSize },
+          "members.participantId": participantId,
+          ...versionFilter,
+        },
+        update,
+      );
+
+      if (result.modifiedCount !== 1) {
+        return NextResponse.json({
+          success: false,
+          message: "This registration changed while you were editing it. Refresh the dashboard and try again.",
+        }, { status: 409 });
+      }
+
       await releaseEventFromParticipantIfUnused(member.participantId, registration.eventSlug, registration._id);
 
       return NextResponse.json({
         success: true,
         message: "Participant removed from this team.",
-        teamSize: registration.teamSize,
+        teamSize: remainingMembers.length,
       });
     }
 
-    const participantIds = registration.members.map((member: { participantId: Types.ObjectId }) => member.participantId);
+    const participantIds = registration.members.map(
+      (member: { participantId: Types.ObjectId }) => member.participantId,
+    );
     const eventSlug = registration.eventSlug;
     const collegeKey = registration.collegeKey;
 
-    registration.status = "cancelled";
-    registration.set("departmentQuotaKey", undefined);
-    await registration.save();
+    // A direct update avoids running validators on legacy embedded member data.
+    const cancellation = await EventRegistration.updateOne(
+      { _id: registration._id, status: "confirmed", ...versionFilter },
+      {
+        $set: { status: "cancelled" },
+        $unset: { departmentQuotaKey: 1 },
+        $inc: { __v: 1 },
+      },
+    );
+    if (cancellation.modifiedCount !== 1) {
+      return NextResponse.json({
+        success: false,
+        message: "This registration changed while you were editing it. Refresh the dashboard and try again.",
+      }, { status: 409 });
+    }
 
     if (eventSlug === "dark-quest-blindfold-clues") {
       await EventCollegeQuota.updateOne(
