@@ -1,5 +1,6 @@
 import { connection, NextResponse } from "next/server";
 import EventRegistration from "@/models/EventRegistration";
+import "@/models/Participant";
 import { requirePermission } from "@/src/lib/authorization";
 
 function escapeRegex(value: string) {
