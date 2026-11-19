@@ -79,7 +79,8 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
     admin.role === "superadmin" || permissions.includes("*") || permissions.includes(permission);
   const canManageSettings = hasPermission("settings:manage");
   const canManageEvents = hasPermission("events:manage");
-  const canViewRegistrations = hasPermission("registrations:view");\n  const canManageRegistrations = hasPermission("registrations:manage");
+  const canViewRegistrations = hasPermission("registrations:view");
+  const canManageRegistrations = hasPermission("registrations:manage");
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -96,7 +97,10 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
   const [savingEvent, setSavingEvent] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [expanded, setExpanded] = useState("");\n  const [editingMember, setEditingMember] = useState<{ registrationId: string; member: Member } | null>(null);\n  const [memberForm, setMemberForm] = useState({ name: "", mobile: "", email: "" });\n  const [savingMember, setSavingMember] = useState("");
+  const [expanded, setExpanded] = useState("");
+  const [editingMember, setEditingMember] = useState<{ registrationId: string; member: Member } | null>(null);
+  const [memberForm, setMemberForm] = useState({ name: "", mobile: "", email: "" });
+  const [savingMember, setSavingMember] = useState("");
 
   const signOut = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => undefined);
