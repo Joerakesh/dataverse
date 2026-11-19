@@ -27,6 +27,14 @@ export function normalizeIndianMobile(value: string) {
   return mobile;
 }
 
+export function normalizeRegistrationEmail(value: string) {
+  const email = value.trim().toLowerCase();
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("Enter a valid email address.");
+  }
+  return email;
+}
+
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
@@ -42,12 +50,14 @@ export function createRegistrationReference() {
 export async function createOrFindParticipant(input: {
   name: string;
   mobile: string;
+  email: string;
   college: string;
   city: string;
   department: string;
 }) {
   await connectDB();
   const mobile = normalizeIndianMobile(input.mobile);
+  const email = normalizeRegistrationEmail(input.email);
   const collegeKey = normalizeKey(input.college);
   const departmentKey = normalizeKey(input.department);
   const existing = await Participant.findOne({ mobile });
@@ -59,7 +69,23 @@ export async function createOrFindParticipant(input: {
     if (existing.collegeKey !== collegeKey || existing.departmentKey !== departmentKey) {
       return { error: "This mobile number is already registered with a different college or department. Please contact the organisers if those details need correction." } as const;
     }
+    if (existing.email && existing.email !== email) {
+      return { error: "This mobile number is already linked to a different email address. Please use the registered email or contact the organisers." } as const;
+    }
+    if (!existing.email) {
+      const emailOwner = await Participant.findOne({ email }).select("_id").lean();
+      if (emailOwner && emailOwner._id.toString() !== existing._id.toString()) {
+        return { error: "This email address is already linked to another participant. Please use your own email address." } as const;
+      }
+      existing.email = email;
+      await existing.save();
+    }
     return { participant: existing } as const;
+  }
+
+  const emailOwner = await Participant.findOne({ email }).select("_id").lean();
+  if (emailOwner) {
+    return { error: "This email address is already linked to another participant. Please use a different email address." } as const;
   }
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -68,6 +94,7 @@ export async function createOrFindParticipant(input: {
         personId: createPersonId(),
         name: input.name.trim(),
         mobile,
+        email,
         college: input.college.trim(),
         collegeKey,
         city: input.city.trim(),
@@ -85,7 +112,18 @@ export async function createOrFindParticipant(input: {
               duplicate.departmentKey !== departmentKey) {
             return { error: "This mobile number is already linked to another participant profile. Please check the details or contact the organisers." } as const;
           }
+          if (duplicate.email && duplicate.email !== email) {
+            return { error: "This mobile number is already linked to a different email address. Please use the registered email or contact the organisers." } as const;
+          }
+          if (!duplicate.email) {
+            duplicate.email = email;
+            await duplicate.save();
+          }
           return { participant: duplicate } as const;
+        }
+        const emailDuplicate = await Participant.findOne({ email }).select("_id").lean();
+        if (emailDuplicate) {
+          return { error: "This email address is already linked to another participant. Please use a different email address." } as const;
         }
         continue;
       }
