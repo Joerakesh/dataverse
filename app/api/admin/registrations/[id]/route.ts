@@ -175,7 +175,7 @@ export async function DELETE(
 
     const versionFilter = typeof registration.__v === "number"
       ? { __v: registration.__v }
-      : { $or: [{ __v: { $exists: false } }, { __v: null }] };
+      : { $or: [{ __v: { $exists: false } }] };
 
     if (parsed.data.participantId) {
       const participantId = new Types.ObjectId(parsed.data.participantId);
