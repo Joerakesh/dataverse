@@ -3,10 +3,10 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Bot, Check, Loader2, Pencil, Phone, Send, ShieldCheck, Users, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bot, Check, Loader2, Mail, Pencil, Phone, Send, ShieldCheck, Users, X } from "lucide-react";
 
 type CollegeSuggestion = { name: string; city: string; district: string; category: string };
-type ParticipantProfile = { name: string; mobile: string; college: string; city: string; department: string };
+type ParticipantProfile = { name: string; mobile: string; email: string; college: string; city: string; department: string };
 type ChatMessage = { id: string; role: "assistant" | "user"; text: string };
 type EventCard = {
   id: string;
@@ -21,7 +21,7 @@ type EventCard = {
   image: string;
   registrationOpen: boolean;
 };
-type TeamMember = { name: string; mobile: string };
+type TeamMember = { name: string; mobile: string; email: string };
 
 const QUESTIONS = [
   "Which college are you from?",
@@ -29,6 +29,7 @@ const QUESTIONS = [
   "Which department are you studying in?",
   "What is your full name?",
   "Please enter your 10-digit mobile number.",
+  "What is your email address? We’ll use it for login codes and event updates.",
 ];
 
 const STORAGE_KEY = "dataverse-registration-draft-v1";
@@ -58,10 +59,10 @@ async function readJson(response: Response) {
 }
 
 export default function RegistrationChatbot() {
-  const [mode, setMode] = useState<"welcome" | "chat" | "events" | "login-mobile" | "login-otp" | "lookup-mobile" | "lookup-otp" | "lookup-done">("welcome");
+  const [mode, setMode] = useState<"welcome" | "chat" | "events" | "login-email" | "login-otp" | "lookup-email" | "lookup-otp" | "lookup-done">("welcome");
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<ParticipantProfile>({
-    college: "", city: "", department: "", name: "", mobile: "",
+    college: "", city: "", department: "", name: "", mobile: "", email: "",
   });
   const [profile, setProfile] = useState<ParticipantProfile | null>(null);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
@@ -83,7 +84,7 @@ export default function RegistrationChatbot() {
   const [showRulesFor, setShowRulesFor] = useState<EventCard | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [includeContact, setIncludeContact] = useState(true);
-  const [lookupMobile, setLookupMobile] = useState("");
+  const [lookupEmail, setLookupEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [revealedPersonId, setRevealedPersonId] = useState("");
   const [busy, setBusy] = useState(false);
@@ -205,7 +206,7 @@ export default function RegistrationChatbot() {
     setMode("chat");
     setStep(0);
     setAnswer("");
-    setDraft({ college: "", city: "", department: "", name: "", mobile: "" });
+    setDraft({ college: "", city: "", department: "", name: "", mobile: "", email: "" });
     setSelectedCollege(null);
     setMessages((current) => [
       ...current,
@@ -216,7 +217,7 @@ export default function RegistrationChatbot() {
 
   const startLogin = (message = "Login") => {
     setError("");
-    setLookupMobile("");
+    setLookupEmail("");
     setOtp("");
     setMode("login-mobile");
     addMessage("user", message);
@@ -225,11 +226,11 @@ export default function RegistrationChatbot() {
 
   const startIdLookup = () => {
     setError("");
-    setLookupMobile("");
+    setLookupEmail("");
     setOtp("");
     setMode("lookup-mobile");
     addMessage("user", "I already registered and need my unique ID.");
-    appendAssistant("I can help with that. Enter the mobile number you used during registration. I’ll send a verification code before showing the ID.");
+    appendAssistant("I can help with that. Enter the email address you used during registration. I’ll send a verification code before showing your ID.");
   };
 
   const loadEvents = async (participant: ParticipantProfile, hasExistingEventRegistrations = false, welcomeMessage?: string) => {
@@ -273,6 +274,7 @@ export default function RegistrationChatbot() {
         body: JSON.stringify({
           name: profileEditDraft.name,
           mobile: profileEditDraft.mobile,
+          email: profileEditDraft.email,
           college: profileEditDraft.college,
           city: profileEditDraft.city,
           department: profileEditDraft.department,
@@ -309,9 +311,23 @@ export default function RegistrationChatbot() {
         setError("Please enter a valid 10-digit Indian mobile number.");
         return;
       }
-      const finalDraft = { ...draft, mobile: normalized };
-      setDraft(finalDraft);
+      setDraft((current) => ({ ...current, mobile: normalized }));
       addMessage("user", value);
+      setStep(5);
+      setAnswer("");
+      appendAssistant(QUESTIONS[5]);
+      return;
+    }
+
+    if (step === 5) {
+      const normalizedEmail = value.toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) {
+        setError("Please enter a valid email address.");
+        return;
+      }
+      const finalDraft = { ...draft, email: normalizedEmail };
+      setDraft(finalDraft);
+      addMessage("user", normalizedEmail);
       setAnswer("");
       setBusy(true);
       try {
@@ -343,6 +359,7 @@ export default function RegistrationChatbot() {
     } else if (step === 1) updated.city = value;
     else if (step === 2) updated.department = value;
     else if (step === 3) updated.name = value;
+    else if (step === 4) updated.mobile = value;
 
     setDraft(updated);
     const nextStep = step + 1;
@@ -363,8 +380,8 @@ export default function RegistrationChatbot() {
     setIncludeContact(true);
     const initial: TeamMember[] = Array.from({ length: event.minTeam }, (_, index) =>
       index === 0 && profile
-        ? { name: profile.name, mobile: profile.mobile }
-        : { name: "", mobile: "" },
+        ? { name: profile.name, mobile: profile.mobile, email: profile.email }
+        : { name: "", mobile: "", email: "" },
     );
     setMembers(initial);
   };
@@ -374,8 +391,8 @@ export default function RegistrationChatbot() {
     if (!profile || !selectedEvent) return;
     setMembers((current) => {
       const next = current.map((member) => ({ ...member }));
-      if (checked) next[0] = { name: profile.name, mobile: profile.mobile };
-      else next[0] = { name: "", mobile: "" };
+      if (checked) next[0] = { name: profile.name, mobile: profile.mobile, email: profile.email };
+      else next[0] = { name: "", mobile: "", email: "" };
       return next;
     });
   };
@@ -386,7 +403,7 @@ export default function RegistrationChatbot() {
 
   const addMember = () => {
     if (!selectedEvent || members.length >= selectedEvent.maxTeam) return;
-    setMembers((current) => [...current, { name: "", mobile: "" }]);
+    setMembers((current) => [...current, { name: "", mobile: "", email: "" }]);
   };
 
   const removeMember = (index: number) => {
@@ -402,13 +419,18 @@ export default function RegistrationChatbot() {
     const cleaned = members.map((member) => ({
       name: member.name.trim(),
       mobile: normalizeTeamMobile(member.mobile),
+      email: member.email.trim().toLowerCase(),
     }));
-    if (cleaned.some((member) => !member.name || !/^\d{10}$/.test(member.mobile))) {
-      setError("Enter a name and valid 10-digit mobile number for every team member.");
+    if (cleaned.some((member) => !member.name || !/^\d{10}$/.test(member.mobile) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email))) {
+      setError("Enter a name, valid mobile number and valid email address for every team member.");
       return;
     }
     if (new Set(cleaned.map((member) => member.mobile)).size !== cleaned.length) {
       setError("Each team member must have a different mobile number.");
+      return;
+    }
+    if (new Set(cleaned.map((member) => member.email)).size !== cleaned.length) {
+      setError("Each team member must have a different email address.");
       return;
     }
 
@@ -437,22 +459,22 @@ export default function RegistrationChatbot() {
   const requestLoginOtp = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
-    const mobile = normalizeTeamMobile(lookupMobile);
-    if (!/^\d{10}$/.test(mobile)) {
-      setError("Enter a valid 10-digit Indian mobile number.");
+    const email = lookupEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+      setError("Enter a valid email address.");
       return;
     }
 
-    addMessage("user", "Use my registered mobile number ending in " + mobile.slice(-4) + ".");
+    addMessage("user", "Use my registered email address " + email + ".");
     setBusy(true);
     try {
       const response = await fetch("/api/registration/login/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile }),
+        body: JSON.stringify({ email }),
       });
       const data = await readJson(response);
-      setLookupMobile(mobile);
+      setLookupEmail(email);
       setMode("login-otp");
       appendAssistant(data.message + " Enter the six-digit code below. It expires in five minutes.");
     } catch (err) {
@@ -471,7 +493,7 @@ export default function RegistrationChatbot() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ mobile: lookupMobile, otp }),
+        body: JSON.stringify({ email: lookupEmail, otp }),
       });
       const data = await readJson(response);
       setOtp("");
@@ -495,7 +517,7 @@ export default function RegistrationChatbot() {
       const response = await fetch("/api/registration/id-lookup/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile: lookupMobile }),
+        body: JSON.stringify({ email: lookupEmail }),
       });
       const data = await readJson(response);
       setMode("lookup-otp");
@@ -515,7 +537,7 @@ export default function RegistrationChatbot() {
       const response = await fetch("/api/registration/id-lookup/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile: lookupMobile, otp }),
+        body: JSON.stringify({ email: lookupEmail, otp }),
       });
       const data = await readJson(response);
       setRevealedPersonId(data.participant.personId);
@@ -546,10 +568,10 @@ export default function RegistrationChatbot() {
     if (asksForId && status.idLookupEnabled) {
       addMessage("user", query);
       setError("");
-      setLookupMobile("");
+      setLookupEmail("");
       setOtp("");
       setMode("lookup-mobile");
-      appendAssistant("I can help with that. Enter the mobile number you used during registration. I’ll send a verification code before showing your ID.");
+      appendAssistant("I can help with that. Enter the email address you used during registration. I’ll send a verification code before showing your ID.");
       return;
     }
 
@@ -641,7 +663,7 @@ export default function RegistrationChatbot() {
 
               {mode === "chat" && (
                 <div className="ml-1 text-[10px] text-emerald-400 font-tech uppercase tracking-widest">
-                  Step {step + 1} of 5 · {["College", "City", "Department", "Name", "Mobile number"][step]}
+                  Step {step + 1} of 6 · {["College", "City", "Department", "Name", "Mobile number", "Email address"][step]}
                 </div>
               )}
 
@@ -663,6 +685,10 @@ export default function RegistrationChatbot() {
                         <div className="rounded-lg border border-slate-800 bg-black/20 p-3">
                           <div className="text-[9px] font-tech uppercase tracking-widest text-slate-500">Mobile number</div>
                           <div className="mt-1 text-sm font-tech text-slate-100">{profile.mobile}</div>
+                        </div>
+                        <div className="rounded-lg border border-slate-800 bg-black/20 p-3">
+                          <div className="text-[9px] font-tech uppercase tracking-widest text-slate-500">Email address</div>
+                          <div className="mt-1 break-all text-sm font-tech text-slate-100">{profile.email || "Not added yet"}</div>
                         </div>
                         <div className="rounded-lg border border-slate-800 bg-black/20 p-3">
                           <div className="text-[9px] font-tech uppercase tracking-widest text-slate-500">City</div>
@@ -740,10 +766,10 @@ export default function RegistrationChatbot() {
                   <input
                     value={answer}
                     onChange={(event) => setAnswer(event.target.value)}
-                    type={step === 4 ? "tel" : "text"}
-                    inputMode={step === 4 ? "tel" : "text"}
-                    maxLength={step === 4 ? 14 : 180}
-                    placeholder={step === 4 ? "10-digit mobile number" : "Type your answer..."}
+                    type={step === 4 ? "tel" : step === 5 ? "email" : "text"}
+                    inputMode={step === 4 ? "tel" : step === 5 ? "email" : "text"}
+                    maxLength={step === 4 ? 14 : step === 5 ? 254 : 180}
+                    placeholder={step === 4 ? "10-digit mobile number" : step === 5 ? "name@example.com" : "Type your answer..."}
                     className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 placeholder:text-slate-600 outline-none focus:border-emerald-500"
                     disabled={busy}
                     autoComplete="off"
@@ -760,9 +786,9 @@ export default function RegistrationChatbot() {
             {mode === "lookup-mobile" && (
               <form onSubmit={requestOtp} className="shrink-0 border-t border-emerald-500/20 bg-slate-950 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:px-5">
                 <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
-                  <Phone size={17} className="shrink-0 text-emerald-400"/>
-                  <input value={lookupMobile} onChange={(event) => setLookupMobile(event.target.value)} type="tel" inputMode="tel" autoComplete="tel" maxLength={14} placeholder="Registered 10-digit mobile number" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500" disabled={busy}/>
-                  <button type="submit" disabled={busy || !lookupMobile.trim()} className="h-11 shrink-0 rounded-xl bg-emerald-500 px-4 text-xs font-tech font-bold uppercase text-black disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Send OTP"}</button>
+                  <Mail size={17} className="shrink-0 text-emerald-400"/>
+                  <input value={lookupEmail} onChange={(event) => setLookupEmail(event.target.value)} type="email" inputMode="email" autoComplete="email" maxLength={254} placeholder="Registered email address" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500" disabled={busy}/>
+                  <button type="submit" disabled={busy || !lookupEmail.trim()} className="h-11 shrink-0 rounded-xl bg-emerald-500 px-4 text-xs font-tech font-bold uppercase text-black disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Send OTP"}</button>
                 </div>
                 {error && <p className="mx-auto mt-2 w-full max-w-4xl text-xs font-tech text-red-400">{error}</p>}
               </form>
@@ -782,9 +808,9 @@ export default function RegistrationChatbot() {
             {mode === "login-mobile" && (
               <form onSubmit={requestLoginOtp} className="shrink-0 border-t border-emerald-500/20 bg-slate-950 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:px-5">
                 <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
-                  <Phone size={17} className="shrink-0 text-emerald-400"/>
-                  <input value={lookupMobile} onChange={(event) => setLookupMobile(event.target.value)} type="tel" inputMode="tel" autoComplete="tel" maxLength={14} placeholder="Your registered 10-digit mobile number" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500" disabled={busy}/>
-                  <button type="submit" disabled={busy || !lookupMobile.trim()} className="h-11 shrink-0 rounded-xl bg-emerald-500 px-4 text-xs font-tech font-bold uppercase text-black disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Send code"}</button>
+                  <Mail size={17} className="shrink-0 text-emerald-400"/>
+                  <input value={lookupEmail} onChange={(event) => setLookupEmail(event.target.value)} type="email" inputMode="email" autoComplete="email" maxLength={254} placeholder="Your registered email address" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500" disabled={busy}/>
+                  <button type="submit" disabled={busy || !lookupEmail.trim()} className="h-11 shrink-0 rounded-xl bg-emerald-500 px-4 text-xs font-tech font-bold uppercase text-black disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Send code"}</button>
                 </div>
                 {error && <p className="mx-auto mt-2 w-full max-w-4xl text-xs font-tech text-red-400">{error}</p>}
               </form>
@@ -836,6 +862,10 @@ export default function RegistrationChatbot() {
                 <input value={profileEditDraft.mobile} disabled className="w-full rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-3 text-sm font-tech text-slate-500 cursor-not-allowed"/>
               </label>
               <label className="block space-y-1.5">
+                <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">Email address · Required for sign-in</span>
+                <input required type="email" maxLength={254} value={profileEditDraft.email} disabled={Boolean(profile?.email)} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, email: event.target.value } : current)} placeholder="name@example.com" className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+              </label>
+              <label className="block space-y-1.5">
                 <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">College</span>
                 <input required minLength={2} maxLength={180} value={profileEditDraft.college} disabled={profileFieldsLocked || registeredEventSlugs.length > 0} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, college: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
               </label>
@@ -874,7 +904,7 @@ export default function RegistrationChatbot() {
                 <div className="text-xs font-tech font-bold text-slate-200 mb-2">How many students are in your team?</div>
                 <div className="flex gap-2">
                   {Array.from({ length: selectedEvent.maxTeam - selectedEvent.minTeam + 1 }, (_, index) => selectedEvent.minTeam + index).map((size) => (
-                    <button key={size} type="button" onClick={() => setMembers((current) => size < current.length ? current.slice(0, size) : [...current, ...Array.from({ length: size - current.length }, () => ({ name: "", mobile: "" }))])} className={"flex-1 rounded-lg border py-2 text-sm font-tech font-bold transition " + (members.length === size ? "border-emerald-400 bg-emerald-500 text-black" : "border-slate-700 bg-slate-900 text-slate-300 hover:border-emerald-500/50")}>
+                    <button key={size} type="button" onClick={() => setMembers((current) => size < current.length ? current.slice(0, size) : [...current, ...Array.from({ length: size - current.length }, () => ({ name: "", mobile: "", email: "" }))])} className={"flex-1 rounded-lg border py-2 text-sm font-tech font-bold transition " + (members.length === size ? "border-emerald-400 bg-emerald-500 text-black" : "border-slate-700 bg-slate-900 text-slate-300 hover:border-emerald-500/50")}>
                       {size}
                     </button>
                   ))}
@@ -883,7 +913,7 @@ export default function RegistrationChatbot() {
               </div>
               <label className="flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-3">
                 <input type="checkbox" checked={includeContact} onChange={(event) => toggleContact(event.target.checked)} className="mt-1 accent-emerald-500"/>
-                <span><span className="block text-sm font-tech font-bold text-slate-100">Include me as a team member</span><span className="block text-xs font-tech text-slate-500 mt-0.5">Your registered name and mobile number will be added as the first participant.</span></span>
+                <span><span className="block text-sm font-tech font-bold text-slate-100">Include me as a team member</span><span className="block text-xs font-tech text-slate-500 mt-0.5">Your registered name, mobile number and email will be added as the first participant.</span></span>
               </label>
               <div className="space-y-3">
                 {members.map((member, index) => (
@@ -895,6 +925,7 @@ export default function RegistrationChatbot() {
                     <div className="grid sm:grid-cols-2 gap-2">
                       <input value={member.name} onChange={(event) => updateMember(index, "name", event.target.value)} disabled={includeContact && index === 0} placeholder="Student full name" className="w-full rounded-lg border border-slate-700 bg-[#060b0e] px-3 py-2.5 text-sm font-tech text-slate-100 disabled:opacity-60"/>
                       <input value={member.mobile} onChange={(event) => updateMember(index, "mobile", event.target.value)} disabled={includeContact && index === 0} placeholder="10-digit mobile number" type="tel" inputMode="tel" maxLength={14} className="w-full rounded-lg border border-slate-700 bg-[#060b0e] px-3 py-2.5 text-sm font-tech text-slate-100 disabled:opacity-60"/>
+                      <input value={member.email} onChange={(event) => updateMember(index, "email", event.target.value)} disabled={includeContact && index === 0} placeholder="Email address" type="email" inputMode="email" maxLength={254} className="w-full rounded-lg border border-slate-700 bg-[#060b0e] px-3 py-2.5 text-sm font-tech text-slate-100 disabled:opacity-60"/>
                     </div>
                   </div>
                 ))}
