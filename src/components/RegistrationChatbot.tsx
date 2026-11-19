@@ -219,16 +219,16 @@ export default function RegistrationChatbot() {
     setError("");
     setLookupEmail("");
     setOtp("");
-    setMode("login-mobile");
+    setMode("login-email");
     addMessage("user", message);
-    appendAssistant("Welcome back! Enter the mobile number you used when registering for DATAVERSE. I’ll send a one-time verification code to that number.");
+    appendAssistant("Welcome back! Enter the email address you registered with DATAVERSE. I’ll send a one-time verification code to that inbox.");
   };
 
   const startIdLookup = () => {
     setError("");
     setLookupEmail("");
     setOtp("");
-    setMode("lookup-mobile");
+    setMode("lookup-email");
     addMessage("user", "I already registered and need my unique ID.");
     appendAssistant("I can help with that. Enter the email address you used during registration. I’ll send a verification code before showing your ID.");
   };
@@ -542,7 +542,7 @@ export default function RegistrationChatbot() {
       const data = await readJson(response);
       setRevealedPersonId(data.participant.personId);
       setMode("lookup-done");
-      addMessage("user", "Verify my mobile number.");
+      addMessage("user", "Verify my email address.");
       appendAssistant("Your DATAVERSE person ID is " + data.participant.personId + ". Keep it safe for future reference.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to verify the code.");
@@ -570,7 +570,7 @@ export default function RegistrationChatbot() {
       setError("");
       setLookupEmail("");
       setOtp("");
-      setMode("lookup-mobile");
+      setMode("lookup-email");
       appendAssistant("I can help with that. Enter the email address you used during registration. I’ll send a verification code before showing your ID.");
       return;
     }
@@ -783,7 +783,7 @@ export default function RegistrationChatbot() {
               </form>
             )}
 
-            {mode === "lookup-mobile" && (
+            {mode === "lookup-email" && (
               <form onSubmit={requestOtp} className="shrink-0 border-t border-emerald-500/20 bg-slate-950 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:px-5">
                 <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
                   <Mail size={17} className="shrink-0 text-emerald-400"/>
@@ -805,7 +805,7 @@ export default function RegistrationChatbot() {
               </form>
             )}
 
-            {mode === "login-mobile" && (
+            {mode === "login-email" && (
               <form onSubmit={requestLoginOtp} className="shrink-0 border-t border-emerald-500/20 bg-slate-950 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:px-5">
                 <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
                   <Mail size={17} className="shrink-0 text-emerald-400"/>
@@ -825,7 +825,7 @@ export default function RegistrationChatbot() {
                 </div>
                 <div className="mx-auto mt-2 w-full max-w-4xl flex items-center justify-between gap-3">
                   {error ? <p className="text-xs font-tech text-red-400">{error}</p> : <span className="text-[10px] font-tech text-slate-500">Code expires in five minutes.</span>}
-                  <button type="button" onClick={() => { setMode("login-mobile"); setOtp(""); setError(""); }} className="shrink-0 text-[10px] font-tech font-bold uppercase tracking-wider text-emerald-300 hover:text-emerald-200">Change mobile</button>
+                  <button type="button" onClick={() => { setMode("login-email"); setOtp(""); setError(""); }} className="shrink-0 text-[10px] font-tech font-bold uppercase tracking-wider text-emerald-300 hover:text-emerald-200">Change email</button>
                 </div>
               </form>
             )}
