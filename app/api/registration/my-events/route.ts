@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import EventRegistration from "@/models/EventRegistration";
 import { getFlowParticipant } from "@/src/lib/public-registration";
 
-export const runtime = "nodejs";
-
 export async function GET() {
   try {
     const participant = await getFlowParticipant();
