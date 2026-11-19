@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Bot, Check, Clock3, Loader2, MapPin, MessageCircle, Phone, Send, ShieldCheck, Sparkles, Users, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bot, Check, Clock3, Loader2, MapPin, MessageCircle, Pencil, Phone, Send, ShieldCheck, Sparkles, Users, X } from "lucide-react";
 
 type CollegeSuggestion = { name: string; city: string; district: string; category: string };
 type ParticipantProfile = { name: string; mobile: string; college: string; city: string; department: string };
@@ -64,6 +64,9 @@ export default function RegistrationChatbot() {
     college: "", city: "", department: "", name: "", mobile: "",
   });
   const [profile, setProfile] = useState<ParticipantProfile | null>(null);
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [profileEditDraft, setProfileEditDraft] = useState<ParticipantProfile | null>(null);
+  const [profileEditorBusy, setProfileEditorBusy] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: "welcome-message", role: "assistant", text: "Welcome to DATAVERSE 2K26! I’m your registration assistant. Let’s get you ready for the fest." },
   ]);
@@ -132,7 +135,7 @@ export default function RegistrationChatbot() {
           setDraft(restoredProfile);
           setMode("events");
           setMessages([
-            makeMessage("assistant", "Welcome back, " + restoredProfile.name + "! Your registration session is ready. You can continue choosing events."),
+            makeMessage("assistant", "Welcome back, " + restoredProfile.name + "! Here is the participant profile currently registered with us. Would you like to review or edit any details?"),
           ]);
           window.sessionStorage.removeItem(STORAGE_KEY);
           const eventsResponse = await fetch("/api/registration/events", { cache: "no-store" });
@@ -235,7 +238,47 @@ export default function RegistrationChatbot() {
       setRegisteredEventSlugs(myEventsData.registeredEventSlugs ?? []);
     }
     setMode("events");
-    appendAssistant("Thanks, " + participant.name + "! Your details are saved. Your participant record is ready. Select the events you’d like to participate in.");
+    appendAssistant("Thanks, " + participant.name + "! Your participant profile is saved. Please review the details shown below. You can edit them before choosing an event.");
+  };
+
+  const openProfileEditor = () => {
+    if (!profile) return;
+    setError("");
+    setProfileEditDraft({ ...profile });
+    setShowProfileEditor(true);
+  };
+
+  const saveProfile = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!profileEditDraft || profileEditorBusy) return;
+    setError("");
+
+    setProfileEditorBusy(true);
+    try {
+      const response = await fetch("/api/registration/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name: profileEditDraft.name,
+          mobile: profileEditDraft.mobile,
+          college: profileEditDraft.college,
+          city: profileEditDraft.city,
+          department: profileEditDraft.department,
+        }),
+      });
+      const data = await readJson(response);
+      const updatedProfile = data.participant as ParticipantProfile;
+      setProfile(updatedProfile);
+      setDraft(updatedProfile);
+      setProfileEditDraft(updatedProfile);
+      setShowProfileEditor(false);
+      appendAssistant("Your participant profile has been updated successfully. You can continue with event registration.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update your profile.");
+    } finally {
+      setProfileEditorBusy(false);
+    }
   };
 
   const submitAnswer = async (event: FormEvent) => {
@@ -487,7 +530,7 @@ export default function RegistrationChatbot() {
       <section className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 py-8 sm:py-12">
         <div className="text-center mb-7">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-[10px] font-tech font-bold tracking-[0.22em] text-emerald-300 uppercase">
-            <Sparkles size={13}/> Participant registration
+            <Sparkles size={13}/> {mode === "events" ? "Your participant profile" : "Participant registration"}
           </div>
           <h1 className="font-avengers text-4xl sm:text-6xl text-avengers-chrome italic tracking-wider mt-3">DATAVERSE ASSISTANT</h1>
           <p className="font-tech text-sm sm:text-base text-slate-400 mt-2">Your guided registration desk for 4 December 2026 · Centenary Building</p>
@@ -557,6 +600,35 @@ export default function RegistrationChatbot() {
 
               {mode === "events" && (
                 <div className="space-y-3">
+                  {profile && (
+                    <div className="rounded-2xl border border-emerald-400/35 bg-gradient-to-br from-emerald-950/60 via-slate-950 to-slate-950 p-4 sm:p-5">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-[10px] font-tech font-bold uppercase tracking-[0.2em] text-emerald-400">Current registered participant</div>
+                          <h2 className="mt-1 font-avengers text-2xl sm:text-3xl text-slate-100">{profile.name}</h2>
+                          <p className="mt-1 text-xs font-tech text-slate-400">{profile.college}</p>
+                        </div>
+                        <button type="button" onClick={openProfileEditor} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-2.5 text-xs font-tech font-bold uppercase tracking-wider text-emerald-200 hover:bg-emerald-500/20 transition-colors">
+                          <Pencil size={14}/> Edit my details
+                        </button>
+                      </div>
+                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="rounded-lg border border-slate-800 bg-black/20 p-3">
+                          <div className="text-[9px] font-tech uppercase tracking-widest text-slate-500">Mobile number</div>
+                          <div className="mt-1 text-sm font-tech text-slate-100">{profile.mobile}</div>
+                        </div>
+                        <div className="rounded-lg border border-slate-800 bg-black/20 p-3">
+                          <div className="text-[9px] font-tech uppercase tracking-widest text-slate-500">City</div>
+                          <div className="mt-1 text-sm font-tech text-slate-100">{profile.city}</div>
+                        </div>
+                        <div className="rounded-lg border border-slate-800 bg-black/20 p-3 sm:col-span-2">
+                          <div className="text-[9px] font-tech uppercase tracking-widest text-slate-500">Department</div>
+                          <div className="mt-1 text-sm font-tech text-slate-100">{profile.department}</div>
+                        </div>
+                      </div>
+                      <p className="mt-3 text-[11px] font-tech text-slate-400">Are these details correct? Review them now. You can edit your profile before continuing.</p>
+                    </div>
+                  )}
                   <div className={"rounded-xl px-4 py-3 border text-sm font-tech " + (registrationOpen ? "bg-emerald-950/30 border-emerald-500/25 text-emerald-100" : "bg-amber-950/30 border-amber-500/30 text-amber-100")}>
                     {registrationOpen ? "Registration is open. Choose an event below." : "Online registration is currently closed. You can still review the event details and rules."}
                   </div>
@@ -682,6 +754,49 @@ export default function RegistrationChatbot() {
           </aside>
         </div>
       </section>
+
+      {showProfileEditor && profileEditDraft && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
+          <div className="doom-card relative w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-2xl border border-emerald-400/40 p-5 sm:p-7">
+            <button type="button" onClick={() => { setShowProfileEditor(false); setError(""); }} className="absolute top-3 right-3 rounded-full p-2 text-slate-400 hover:text-white hover:bg-slate-800" aria-label="Close profile editor"><X size={19}/></button>
+            <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-400 font-tech font-bold">Participant details</div>
+            <h2 className="font-avengers text-3xl sm:text-4xl text-avengers-chrome italic mt-1">Review your profile</h2>
+            <p className="text-sm font-tech text-slate-400 mt-2">Check the information below and save any corrections.</p>
+            <form onSubmit={saveProfile} className="mt-5 space-y-3">
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">Full name</span>
+                <input required minLength={2} maxLength={100} value={profileEditDraft.name} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, name: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500"/>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">Mobile number · Account identifier</span>
+                <input value={profileEditDraft.mobile} disabled className="w-full rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-3 text-sm font-tech text-slate-500 cursor-not-allowed"/>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">College</span>
+                <input required minLength={2} maxLength={180} value={profileEditDraft.college} disabled={registeredEventSlugs.length > 0} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, college: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">City</span>
+                <input required minLength={2} maxLength={100} value={profileEditDraft.city} disabled={registeredEventSlugs.length > 0} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, city: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">Department</span>
+                <input required minLength={2} maxLength={120} value={profileEditDraft.department} disabled={registeredEventSlugs.length > 0} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, department: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+              </label>
+              {registeredEventSlugs.length > 0 && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs font-tech leading-relaxed text-amber-200">
+                  You have already registered for an event. College, city and department are locked because they are part of the saved event registration. Your name can still be corrected. For other corrections, contact the organisers.
+                </div>
+              )}
+              {error && <div className="rounded-lg border border-red-500/30 bg-red-950/30 px-3 py-2 text-xs font-tech text-red-300">{error}</div>}
+              <div className="flex gap-2 pt-2">
+                <button type="button" disabled={profileEditorBusy} onClick={() => { setShowProfileEditor(false); setError(""); }} className="flex-1 rounded-xl border border-slate-700 bg-slate-900 py-3 text-xs font-tech font-bold uppercase text-slate-300">Cancel</button>
+                <button type="submit" disabled={profileEditorBusy} className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 py-3 text-xs font-tech font-bold uppercase tracking-wider text-black disabled:opacity-50">{profileEditorBusy ? "Saving..." : "Save changes"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
