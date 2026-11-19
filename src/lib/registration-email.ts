@@ -137,14 +137,19 @@ export async function sendRegistrationOtpEmail(
   };
   if (sessionToken) headers["x-amz-security-token"] = sessionToken;
 
-  const sortedHeaders = Object.entries(headers).sort(([a], [b]) => a.localeCompare(b));
-  const canonicalHeaders = sortedHeaders.map(([key, value]) => key.toLowerCase() + ":" + value.trim() + "\n").join("");
+  // SigV4 requires headers in bytewise alphabetical order, with
+  // normalized values and a newline after every canonical header.
+  const sortedHeaders = Object.entries(headers).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+  const canonicalHeaders = sortedHeaders
+    .map(([key, value]) => key.toLowerCase() + ":" + value.trim().replace(/\\s+/g, " ") + "\n")
+    .join("");
   const signedHeaders = sortedHeaders.map(([key]) => key.toLowerCase()).join(";");
   const canonicalRequest = [
     "POST",
     "/v2/email/outbound-emails",
     "",
-    canonicalHeaders + signedHeaders,
+    canonicalHeaders,
+    signedHeaders,
     bodyHash,
   ].join("\n");
   const scope = dateStamp + "/" + region + "/ses/aws4_request";
