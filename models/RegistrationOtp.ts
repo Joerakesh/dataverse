@@ -1,7 +1,15 @@
 import { Schema, models, model } from "mongoose";
 
 const RegistrationOtpSchema = new Schema({
-  mobile: { type: String, required: true, index: true },
+  email: {
+    type: String,
+    required: function (this: { isNew: boolean }) { return this.isNew; },
+    trim: true,
+    lowercase: true,
+    index: true,
+  },
+  // Kept optional so old SMS OTP documents can expire naturally after this rollout.
+  mobile: { type: String, required: false, index: true },
   purpose: { type: String, enum: ["login", "id-lookup"], default: "id-lookup", index: true },
   requestIpHash: { type: String, required: true, index: true },
   otpHash: { type: String, required: true },
@@ -11,6 +19,7 @@ const RegistrationOtpSchema = new Schema({
 }, { timestamps: true });
 
 RegistrationOtpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+RegistrationOtpSchema.index({ email: 1, purpose: 1, createdAt: -1 });
 RegistrationOtpSchema.index({ mobile: 1, purpose: 1, createdAt: -1 });
 
 export default models.RegistrationOtp || model("RegistrationOtp", RegistrationOtpSchema);
