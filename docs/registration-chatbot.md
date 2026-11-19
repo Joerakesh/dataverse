@@ -21,7 +21,7 @@ The browser chat transcript itself is not currently synchronised between devices
 5. Validate team size, eligible department, two-events-per-person limit, and college/department team limits.
 6. Save each person with a stable person ID and save each event team with a separate internal registration reference. Neither identifier is returned during initial registration.
 
-Every participant email address is unique and is used for future sign-in and ID verification. An existing participant profile created before email became mandatory can add its email by completing registration details again with the same mobile number and matching participant/college/department details, or by completing the email field in the signed-in profile editor. Once an email is saved, it cannot be changed from the public profile editor; contact the organisers for corrections.
+Every participant email address is unique and is used for future sign-in and ID verification. An existing participant profile created before email became mandatory can add its email in the signed-in profile editor. If the participant no longer has an active session, the organisers must update the legacy profile before email login can work. Once an email is saved, it cannot be changed from the public profile editor; contact the organisers for corrections.
 
 A participant is treated as part of the team only when their details are included in the event's team-member dialog. The contact can register a team without being a team member.
 
@@ -65,7 +65,7 @@ The public registration API checks the DATAVERSE Settings record. Registration i
 - The dashboard is available at `/admin`.
 - The global registration gate opens or closes all public event submissions.
 - Each event has a separate registration switch. Turning one event off does not close the others.
-- The registrations table shows registration reference, event, college, city, department, team members and mobile numbers. It supports searching, event/status filters, pagination and CSV export of the current page.
+- The registrations table shows registration reference, event, college, city, department, team members, mobile numbers and email addresses. It supports searching, event/status filters, pagination and CSV export of the current page.
 - Dashboard APIs require the existing admin session and the permissions `settings:manage`, `events:manage` and `registrations:view`. The seeded superadmin has all permissions.
 - Seed the first admin using `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` and `SEED_ADMIN_NAME`, then run `npm run seed`.
 - Rerunning the seed updates event details but preserves each event's registration switch and the global registration setting.
