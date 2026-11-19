@@ -17,7 +17,7 @@ const genericResponse = {
 export async function POST(request: Request) {
   await connection();
   try {
-    if (!process.env.AWS_REGION && !process.env.AWS_DEFAULT_REGION
+    if ((!process.env.AWS_REGION && !process.env.AWS_DEFAULT_REGION)
       || !process.env.AWS_ACCESS_KEY_ID
       || !process.env.AWS_SECRET_ACCESS_KEY
       || !process.env.SES_FROM_EMAIL
