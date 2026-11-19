@@ -1,7 +1,6 @@
 import { connection, NextResponse } from "next/server";
 import { z } from "zod";
 import EventRegistration from "@/models/EventRegistration";
-import Participant from "@/models/Participant";
 import {
   createOrFindParticipant,
   createRegistrationFlow,
