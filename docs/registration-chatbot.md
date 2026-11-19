@@ -1,6 +1,14 @@
 # DATAVERSE participant registration chatbot
 
-The public participant experience is a guided, deterministic chatbot. It does not use an LLM or require participant accounts.
+The public participant experience is a guided, deterministic chatbot. It does not use an LLM. Each participant has one profile identified by their verified mobile number.
+
+## Participant login on another device
+
+A returning participant can type `login` in the chat (or choose the Login quick action), enter the mobile number used for registration, and verify the one-time SMS code. The verification creates a new 12-hour HttpOnly registration session on that browser/device and restores the participant's saved profile and event registrations. Logging in on another device does not invalidate an existing device session.
+
+A mobile number by itself is not sufficient to log in. SMS delivery must be configured with `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` and a random `OTP_HASH_SECRET` of at least 32 characters. Login OTPs are rate-limited, expire after five minutes and allow at most five verification attempts. Login is not date-gated.
+
+The browser chat transcript itself is not currently synchronised between devices; login restores the participant profile and event registration state.
 
 ## Registration flow
 
@@ -31,13 +39,13 @@ ID retrieval stays disabled until DATAVERSE_ID_LOOKUP_ENABLED_AT is set to an IS
 
 DATAVERSE_ID_LOOKUP_ENABLED_AT=2026-12-05T00:00:00+05:30
 
-To send one-time verification codes after enabling ID retrieval, configure Twilio:
+Participant login uses one-time verification codes whenever these SMS settings are configured. Person-ID lookup also uses the same SMS provider, but its availability remains separately date-gated. Configure Twilio:
 - TWILIO_ACCOUNT_SID
 - TWILIO_AUTH_TOKEN
 - TWILIO_FROM_NUMBER
 - OTP_HASH_SECRET (recommended; use a long random value)
 
-Do not enable ID retrieval until the SMS credentials have been configured and tested. The lookup endpoint verifies the mobile number by OTP before returning a person ID.
+Test SMS delivery before using participant login or enabling ID retrieval. Login verifies the mobile number by OTP before creating a participant session. The ID lookup endpoint separately verifies the mobile number before returning a person ID.
 
 ## College directory scope
 
@@ -62,8 +70,8 @@ The current rulebook rules are encoded in src/data/events.ts and enforced server
 
 ## Notes for organisers
 
-- No participant dashboard or participant password is created.
-- The flow cookie is HttpOnly, Secure in production, SameSite Strict and expires after 12 hours.
+- No participant password is created; participant access is through mobile-number OTP verification.
+- Each device gets its own HttpOnly, Secure-in-production, SameSite Strict flow cookie that expires after 12 hours.
 - Person IDs and event registration references are not included in public registration responses.
 - The two-event limit is checked against all confirmed registrations. Configure MongoDB with a replica set (MongoDB Atlas is suitable) before launch, and test concurrent registration traffic.
 - Keep a separate staff/admin account system for organiser operations.
