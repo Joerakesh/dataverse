@@ -1,23 +1,27 @@
 # DATAVERSE participant registration chatbot
 
-The public participant experience is a guided, deterministic chatbot. It does not use an LLM. Each participant has one profile identified by their verified mobile number.
+The public participant experience is a guided, deterministic chatbot. It does not use an LLM. Each participant has one profile identified by a unique mobile number and a unique email address. Email is required for every participant because login and verification codes are delivered by email.
 
 ## Participant login on another device
 
-A returning participant can type `login` in the chat (or choose the Login quick action), enter the mobile number used for registration, and verify the one-time SMS code. The verification creates a new 12-hour HttpOnly registration session on that browser/device and restores the participant's saved profile and event registrations. Logging in on another device does not invalidate an existing device session.
+A returning participant can type `login` in the chat (or choose the Login quick action), enter the email address registered with DATAVERSE, and verify the one-time code sent to that inbox. The verification creates a new 12-hour HttpOnly registration session on that browser/device and restores the participant's saved profile and event registrations. Logging in on another device does not invalidate an existing device session.
 
-A mobile number by itself is not sufficient to log in. SMS delivery must be configured with `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` and a random `OTP_HASH_SECRET` of at least 32 characters. Login OTPs are rate-limited, expire after five minutes and allow at most five verification attempts. Login is not date-gated.
+A registered email address alone is not sufficient to log in. Amazon SES sends a one-time code to the address on the participant record. Configure `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `SES_FROM_EMAIL` and a random `OTP_HASH_SECRET` of at least 32 characters. `AWS_SESSION_TOKEN`, `SES_REPLY_TO_EMAIL` and `SES_CONFIGURATION_SET` are optional. OTPs are rate-limited, expire after five minutes and allow at most five verification attempts. Login is not date-gated.
+
+The sender address or domain must be verified in Amazon SES. An SES account still in the sandbox can send only to verified recipient addresses (or SES mailbox simulator addresses); request production access before sending to general participant email addresses. See the [AWS SES sending requirements](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/ses-examples-sending-email.html).
 
 The browser chat transcript itself is not currently synchronised between devices; login restores the participant profile and event registration state.
 
 ## Registration flow
 
-1. Collect college, city, department, contact name and mobile number.
+1. Collect college, city, department, contact name, mobile number and email address.
 2. Store the contact as a participant and create a private 12-hour registration-flow cookie.
 3. Show the eight event cards and their rulebook team-size limits.
-4. Collect each team member's name and mobile number.
+4. Collect each team member's name, mobile number and email address.
 5. Validate team size, eligible department, two-events-per-person limit, and college/department team limits.
 6. Save each person with a stable person ID and save each event team with a separate internal registration reference. Neither identifier is returned during initial registration.
+
+Every participant email address is unique and is used for future sign-in and ID verification. An existing participant profile created before email became mandatory can add its email by completing registration details again with the same mobile number and matching participant/college/department details, or by completing the email field in the signed-in profile editor. Once an email is saved, it cannot be changed from the public profile editor; contact the organisers for corrections.
 
 A participant is treated as part of the team only when their details are included in the event's team-member dialog. The contact can register a team without being a team member.
 
@@ -33,23 +37,23 @@ Sources:
 
 ## Required environment variables
 
-The existing MONGODB_URI is required.
+The existing `MONGODB_URI` is required. Configure Amazon SES credentials and sender identity before enabling participant login or email-based ID lookup:
 
-ID retrieval stays disabled until DATAVERSE_ID_LOOKUP_ENABLED_AT is set to an ISO date/time, for example:
+- `AWS_REGION` (or `AWS_DEFAULT_REGION`)
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `SES_FROM_EMAIL` (verified SES email identity or a sender in a verified domain)
+- `OTP_HASH_SECRET` (at least 32 random characters)
 
+Optional: `AWS_SESSION_TOKEN` for temporary credentials, `SES_REPLY_TO_EMAIL`, and `SES_CONFIGURATION_SET`.
+
+ID retrieval stays disabled until `DATAVERSE_ID_LOOKUP_ENABLED_AT` is set to an ISO date/time, for example:
+
+```env
 DATAVERSE_ID_LOOKUP_ENABLED_AT=2026-12-05T00:00:00+05:30
+```
 
-Participant login uses one-time verification codes whenever these SMS settings are configured. Person-ID lookup also uses the same SMS provider, but its availability remains separately date-gated. Configure Twilio:
-- TWILIO_ACCOUNT_SID
-- TWILIO_AUTH_TOKEN
-- TWILIO_FROM_NUMBER
-- OTP_HASH_SECRET (recommended; use a long random value)
-
-Test SMS delivery before using participant login or enabling ID retrieval. Login verifies the mobile number by OTP before creating a participant session. The ID lookup endpoint separately verifies the mobile number before returning a person ID.
-
-## College directory scope
-
-The autocomplete directory is a maintained snapshot of the public lists linked above, covering colleges in Chennai and the nearby Chennai, Chengalpattu, Kancheepuram and Tiruvallur districts, plus category listings published by GCC. These registries have different scopes and update cycles, so the snapshot cannot guarantee every currently operating institution or every campus. Participants can always type their institution manually; organisers should review new entries before event day.
+Login uses email OTP whenever the SES settings are configured. Person-ID lookup also uses email OTP, but its availability remains separately date-gated. Test SES delivery with a verified address before using participant login or enabling ID retrieval. During SES sandbox operation, recipient addresses must also be verified.
 
 ## Settings and event rules
 
@@ -66,11 +70,11 @@ The public registration API checks the DATAVERSE Settings record. Registration i
 - Seed the first admin using `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` and `SEED_ADMIN_NAME`, then run `npm run seed`.
 - Rerunning the seed updates event details but preserves each event's registration switch and the global registration setting.
 
-The current rulebook rules are encoded in src/data/events.ts and enforced server-side. If organisers change team sizes or restrictions, update the event catalog and this validation together.
+The current rulebook rules are encoded in `src/data/events.ts` and enforced server-side. If organisers change team sizes or restrictions, update the event catalog and this validation together.
 
 ## Notes for organisers
 
-- No participant password is created; participant access is through mobile-number OTP verification.
+- No participant password is created; participant access is through email OTP verification.
 - Each device gets its own HttpOnly, Secure-in-production, SameSite Strict flow cookie that expires after 12 hours.
 - Person IDs and event registration references are not included in public registration responses.
 - The two-event limit is checked against all confirmed registrations. Configure MongoDB with a replica set (MongoDB Atlas is suitable) before launch, and test concurrent registration traffic.
