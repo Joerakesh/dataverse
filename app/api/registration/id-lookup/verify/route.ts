@@ -3,11 +3,11 @@ import { timingSafeEqual } from "crypto";
 import { z } from "zod";
 import Participant from "@/models/Participant";
 import RegistrationOtp from "@/models/RegistrationOtp";
-import { getPublicRegistrationStatus, normalizeIndianMobile } from "@/src/lib/public-registration";
-import { hashRegistrationOtp } from "@/src/lib/sms";
+import { getPublicRegistrationStatus } from "@/src/lib/public-registration";
+import { hashRegistrationOtp } from "@/src/lib/registration-email";
 
 const schema = z.object({
-  mobile: z.string().trim().min(10).max(20),
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
   otp: z.string().regex(/^\d{6}$/),
 });
 
@@ -17,11 +17,11 @@ export async function POST(request: Request) {
     if (!status.idLookupEnabled) return NextResponse.json({ success: false, message: "Unique ID retrieval is not available yet." }, { status: 403 });
 
     const parsed = schema.safeParse(await request.json());
-    if (!parsed.success) return NextResponse.json({ success: false, message: "Enter your mobile number and six-digit verification code." }, { status: 400 });
-    const mobile = normalizeIndianMobile(parsed.data.mobile);
+    if (!parsed.success) return NextResponse.json({ success: false, message: "Enter your registered email address and six-digit verification code." }, { status: 400 });
+    const email = parsed.data.email;
     const record = await RegistrationOtp.findOne({
-      mobile,
-      $or: [{ purpose: "id-lookup" }, { purpose: { $exists: false } }],
+      email,
+      purpose: "id-lookup",
       consumedAt: null,
       expiresAt: { $gt: new Date() },
     }).sort({ createdAt: -1 });
@@ -41,8 +41,8 @@ export async function POST(request: Request) {
     record.consumedAt = new Date();
     await record.save();
 
-    const participant = await Participant.findOne({ mobile }).select("personId name").lean();
-    if (!participant) return NextResponse.json({ success: false, message: "No DATAVERSE participant record was found for this mobile number." }, { status: 404 });
+    const participant = await Participant.findOne({ email }).select("personId name").lean();
+    if (!participant) return NextResponse.json({ success: false, message: "No DATAVERSE participant record was found for this email address." }, { status: 404 });
 
     return NextResponse.json({ success: true, participant: { personId: participant.personId, name: participant.name } });
   } catch (error) {
