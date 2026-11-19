@@ -21,6 +21,7 @@ export async function POST(request: Request) {
     const mobile = normalizeIndianMobile(parsed.data.mobile);
     const record = await RegistrationOtp.findOne({
       mobile,
+      $or: [{ purpose: "id-lookup" }, { purpose: { $exists: false } }],
       consumedAt: null,
       expiresAt: { $gt: new Date() },
     }).sort({ createdAt: -1 });
