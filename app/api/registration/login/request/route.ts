@@ -2,6 +2,7 @@ import { connection, NextResponse } from "next/server";
 import { randomInt } from "crypto";
 import { z } from "zod";
 import RegistrationOtp from "@/models/RegistrationOtp";
+import { connectDB } from "@/src/lib/mongodb";
 import Participant from "@/models/Participant";
 import { hashRegistrationOtp, hashRegistrationRequestIp, sendRegistrationOtpEmail } from "@/src/lib/registration-email";
 
@@ -32,6 +33,9 @@ export async function POST(request: Request) {
     }
 
     const email = parsed.data.email;
+
+    // Ensure MongoDB is connected before any OTP or participant queries.
+    await connectDB();
     const forwardedFor = request.headers.get("x-forwarded-for");
     const clientIp = forwardedFor?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
     const requestIpHash = hashRegistrationRequestIp(clientIp);
