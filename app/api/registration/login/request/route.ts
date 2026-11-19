@@ -18,6 +18,10 @@ const genericResponse = {
 export async function POST(request: Request) {
   await connection();
   try {
+    if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_FROM_NUMBER || !process.env.OTP_HASH_SECRET || process.env.OTP_HASH_SECRET.length < 32) {
+      return NextResponse.json({ success: false, message: "Participant login is not configured yet. Please contact the organisers." }, { status: 503 });
+    }
+
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) {
       return NextResponse.json({ success: false, message: "Enter your registered 10-digit mobile number." }, { status: 400 });
