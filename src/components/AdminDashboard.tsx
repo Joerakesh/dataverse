@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Activity, CalendarClock, CheckCircle2, ChevronLeft, ChevronRight,
@@ -207,7 +207,7 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
     setNotice("");
   };
 
-  const saveMember = async (event: React.FormEvent<HTMLFormElement>) => {
+  const saveMember = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editingMember) return;
     setSavingMember(editingMember.member.id);
