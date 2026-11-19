@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { connection, NextResponse } from "next/server";
+import { ensureEventRegistrationSettings, getEventRegistrationSettings } from "@/src/lib/event-registration-settings";
 import { z } from "zod";
 import Event from "@/models/Event";
 import { requirePermission } from "@/src/lib/authorization";
@@ -12,6 +13,24 @@ const schema = z.object({
   registrationOpen: z.boolean().optional(), maxParticipants: z.number().int().positive().optional(), status: z.enum(["draft", "published", "archived"]).optional(),
   image: z.string().url().optional(), displayOrder: z.number().int().optional(),
 }).refine((data) => !data.teamSize || data.teamSize.min <= data.teamSize.max, { message: "Minimum team size must not exceed maximum." });
+
+export async function GET() {
+  await connection();
+  try {
+    await requirePermission("events:manage");
+    const events = await getEventRegistrationSettings();
+    return NextResponse.json({ success: true, events });
+  } catch (error) {
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return NextResponse.json({ success: false, message: "Authentication required." }, { status: 401 });
+    }
+    if (error instanceof Error && error.message === "FORBIDDEN") {
+      return NextResponse.json({ success: false, message: "You do not have permission to manage events." }, { status: 403 });
+    }
+    console.error("Admin events list error:", error);
+    return NextResponse.json({ success: false, message: "Unable to load events." }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   try {

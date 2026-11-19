@@ -1,17 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
-import { Zap, ArrowRight, Calendar, MapPin, Award, Download, Users, Ticket, Clock, Phone, Sparkles } from "lucide-react";
+import { ArrowRight, Calendar, MapPin, Download, Clock, Phone } from "lucide-react";
+import Link from "next/link";
 import { sounds } from "@/src/utils/soundEffects";
 
-interface HeroProps {
-  onOpenAuth: () => void;
-  onOpenPass: () => void;
-  onOpenTeam: () => void;
-}
-
-export default function Hero({ onOpenAuth, onOpenPass, onOpenTeam }: HeroProps) {
+export default function Hero() {
   // Countdown to 04.12.2026 09:00 AM
   const [timeLeft, setTimeLeft] = useState({
     days: "14",
@@ -85,11 +79,11 @@ export default function Hero({ onOpenAuth, onOpenPass, onOpenTeam }: HeroProps) 
 
         {/* Tagline */}
         <p className="font-doom text-base sm:text-xl md:text-2xl text-slate-100 tracking-wider max-w-3xl mb-3 font-semibold">
-          NATIONAL LEVEL INTER-COLLEGIATE TECH SYMPOSIUM
+          INTER-COLLEGIATE TECHNICAL FEST
         </p>
 
         <p className="font-tech text-sm sm:text-base text-emerald-300/90 max-w-2xl mb-8 tracking-wide">
-          Society of Artificial Intelligence and Generative Engineering (SAGE) presents the ultimate Dr. Doom Multiverse convergence.
+          The Department of Data Science, in association with SAGE (Society of Artificial Intelligence and Generative Engineering), welcomes you to a day of innovation, creativity and competition.
         </p>
 
         {/* Key Event Badges (Straight from Poster) */}
@@ -100,7 +94,7 @@ export default function Hero({ onOpenAuth, onOpenPass, onOpenTeam }: HeroProps) 
           </div>
           <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-slate-900/90 border border-emerald-500/40">
             <Clock size={16} className="text-amber-400" />
-            <span>09:00 AM SHARP</span>
+            <span>09:00 AM ONWARDS</span>
           </div>
           <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-slate-900/90 border border-emerald-500/40">
             <MapPin size={16} className="text-red-400" />
@@ -140,43 +134,17 @@ export default function Hero({ onOpenAuth, onOpenPass, onOpenTeam }: HeroProps) 
           ))}
         </div>
 
-        {/* CTA Action Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
-          <button
-            onClick={() => {
-              sounds.playClick();
-              onOpenAuth();
-            }}
+        {/* Participant Registration CTA */}
+        <div className="flex items-center justify-center mb-10">
+          <Link
+            href="/register"
+            onClick={() => sounds.playClick()}
             className="btn-avengers px-9 py-4 bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 text-black font-avengers text-2xl font-bold tracking-widest rounded-lg shadow-[0_0_30px_rgba(0,255,136,0.5)] hover:shadow-[0_0_40px_rgba(0,255,136,0.8)] transition-all"
           >
             <span className="flex items-center gap-2">
-              ASSEMBLE & ENLIST <ArrowRight size={20} />
+              REGISTER NOW <ArrowRight size={20} />
             </span>
-          </button>
-          
-          <button
-            onClick={() => {
-              sounds.playClick();
-              onOpenPass();
-            }}
-            className="btn-avengers px-7 py-4 bg-slate-900/90 border border-emerald-400/40 text-emerald-300 font-avengers text-2xl tracking-widest rounded-lg hover:border-emerald-300 hover:bg-emerald-950/40 transition-all flex items-center gap-2"
-          >
-            <span className="flex items-center gap-2">
-              <Ticket size={20} /> CLAIM PASS
-            </span>
-          </button>
-
-          <button
-            onClick={() => {
-              sounds.playClick();
-              onOpenTeam();
-            }}
-            className="btn-avengers px-7 py-4 bg-slate-900/90 border border-emerald-400/40 text-emerald-300 font-avengers text-2xl tracking-widest rounded-lg hover:border-emerald-300 hover:bg-emerald-950/40 transition-all flex items-center gap-2"
-          >
-            <span className="flex items-center gap-2">
-              <Users size={20} /> SQUAD PORTAL
-            </span>
-          </button>
+          </Link>
         </div>
 
         {/* Secretarial Leadership Strip (From Poster) */}

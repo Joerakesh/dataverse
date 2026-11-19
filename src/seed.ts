@@ -20,10 +20,15 @@ async function seed() {
 
     // Seed events by slug
     for (const event of initialEvents) {
+      const { registrationOpen, status, ...eventDetails } = event;
       await Event.findOneAndUpdate(
         { slug: event.slug },
-        { $set: event },
-        { upsert: true, returnDocument: "after" },
+        {
+          $set: eventDetails,
+          // Registration switches are operational settings; never reset them on reseed.
+          $setOnInsert: { registrationOpen, status },
+        },
+        { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
       );
     }
 
@@ -62,13 +67,16 @@ async function seed() {
       { symposiumName: "DATAVERSE" },
       {
         $set: {
-          symposiumName: "DATAVERSE",
-          registrationEnabled: true,
-          maintenanceMode: false,
           theme: {
             primaryColor: "#052e16",
             accentColor: "#10b981",
           },
+        },
+        // The first seed starts closed. Admins explicitly open public registration.
+        $setOnInsert: {
+          symposiumName: "DATAVERSE",
+          registrationEnabled: false,
+          maintenanceMode: false,
         },
       },
       { upsert: true, returnDocument: "after" },

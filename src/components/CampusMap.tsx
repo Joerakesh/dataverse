@@ -1,190 +1,62 @@
-"use client";
+import React from "react";
+import { MapPin, Navigation, ClipboardList, Info } from "lucide-react";
 
-import React, { useState } from "react";
-import { MapPin, Navigation, Coffee, ShieldCheck, Bus, Info } from "lucide-react";
-import { sounds } from "@/src/utils/soundEffects";
-
-interface VenueSpot {
-  name: string;
-  floor: string;
-  arena: string;
-  hero: string;
-  desc: string;
-}
+const eventNames = [
+  "AgentOps – AI Agent Hackathon",
+  "Data Nova – Project Presentation",
+  "Intelliquest – Quiz",
+  "VisQuest – Data Visualisation",
+  "Pitch Storm – Shark Tank",
+  "Dark Quest – Blindfold Clues",
+  "Brand New Hunt – Treasure Hunt",
+  "Infinity Decode – Connections",
+];
 
 export default function CampusMap() {
-  const [selectedSpot, setSelectedSpot] = useState<number>(0);
-
-  const spots: VenueSpot[] = [
-    {
-      name: "Citadel Computing Lab 1",
-      floor: "2nd Floor, Main Block",
-      arena: "Unknown Variable (Flagship)",
-      hero: "Dr. Doom",
-      desc: "High-spec workstation lab with dedicated offline AI development environments.",
-    },
-    {
-      name: "Auditorium Alpha",
-      floor: "Ground Floor, Admin Wing",
-      arena: "Data Nova (Project Presentation)",
-      hero: "Captain America",
-      desc: "Equipped with dual projectors, audio podiums, and jury consultation chambers.",
-    },
-    {
-      name: "Stark Innovation Hall",
-      floor: "1st Floor, Technology Block",
-      arena: "Pitch Storm (Shark Tank)",
-      hero: "Iron Man",
-      desc: "Executive boardroom layout with projection screens and prototype demonstration tables.",
-    },
-    {
-      name: "Visual Analytics Sanctum",
-      floor: "3rd Floor, Data Block",
-      arena: "VisQuest (Data Visualisation)",
-      hero: "Doctor Strange",
-      desc: "Multi-monitor analytics terminals configured for visual scrutiny and dataset evaluation.",
-    },
-    {
-      name: "Titan Hall (Room 204)",
-      floor: "2nd Floor, Science Wing",
-      arena: "Dataverse Quiz",
-      hero: "The Hulk",
-      desc: "Spacious tier-seated lecture hall with buzzer consoles and live scoreboard.",
-    },
-    {
-      name: "Web Sanctum (Room 102)",
-      floor: "1st Floor, Main Block",
-      arena: "Dark Quest (Blindfold)",
-      hero: "Spider-Man",
-      desc: "Acoustically isolated room with projection screen for visual clue transmission.",
-    },
-    {
-      name: "Citadel Courtyard & Quad",
-      floor: "Central Campus Grounds",
-      arena: "Brand New Hunt (Treasure Hunt)",
-      hero: "Rocket Raccoon",
-      desc: "Outdoor grounds, corridors, and campus landscape for checkpoint traversal.",
-    },
-  ];
-
   return (
     <section id="map" className="py-24 relative bg-[#070b10] border-t border-emerald-500/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-emerald-950/70 border border-emerald-500/30 text-emerald-400 text-xs font-tech font-bold uppercase tracking-widest mb-3">
-            <Navigation size={14} />
-            <span>Tactical Coordinates</span>
+            <Navigation size={14}/><span>Event location</span>
           </div>
-          <h2 className="font-avengers text-5xl sm:text-7xl text-avengers-chrome italic tracking-wider">
-            CITADEL SECTOR MAP
-          </h2>
-          <p className="font-tech text-base sm:text-lg text-slate-400 mt-2">
-            Navigate the battle grounds. Review arena locations, amenity stations, and registration check-ins.
-          </p>
+          <h2 className="font-avengers text-5xl sm:text-7xl text-avengers-chrome italic tracking-wider">CENTENARY BUILDING</h2>
+          <p className="font-tech text-base sm:text-lg text-slate-400 mt-2">The event venue shown on the DATAVERSE 2K26 invitation. Individual room allocations will be shared by the organisers.</p>
         </div>
 
-        {/* Interactive Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* Venue List */}
-          <div className="lg:col-span-5 space-y-3">
-            <span className="text-xs font-tech font-bold uppercase tracking-widest text-slate-400 block mb-2">
-              Select Sector to Inspect:
-            </span>
-            {spots.map((spot, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  sounds.playClick();
-                  setSelectedSpot(idx);
-                }}
-                className={`w-full text-left p-4 rounded-xl transition-all border ${
-                  selectedSpot === idx
-                    ? "bg-slate-900 border-emerald-400 shadow-[0_0_20px_rgba(0,255,136,0.25)] translate-x-1"
-                    : "bg-slate-950/80 border-slate-800 hover:border-slate-700 opacity-75 hover:opacity-100"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-avengers text-xl text-slate-100 tracking-wide">
-                    {spot.name}
-                  </span>
-                  <span className="text-[10px] font-tech font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-                    {spot.hero}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-xs font-tech text-slate-400">
-                  <MapPin size={12} className="text-red-400 flex-shrink-0" />
-                  <span>{spot.floor}</span>
-                </div>
-              </button>
-            ))}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
+          <div className="lg:col-span-2 doom-card rounded-2xl p-7 border border-emerald-500/40 flex flex-col justify-between">
+            <div>
+              <div className="w-14 h-14 rounded-2xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 grid place-items-center mb-5"><MapPin size={28}/></div>
+              <span className="font-tech text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">Official venue</span>
+              <h3 className="font-avengers text-3xl sm:text-4xl text-avengers-chrome italic mt-2">LOYOLA COLLEGE</h3>
+              <p className="font-tech text-sm text-slate-300 mt-2">Centenary Building, Chennai – 600034</p>
+              <div className="mt-5 p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-tech text-slate-400 leading-relaxed">
+                <Info size={14} className="inline text-emerald-400 mr-2"/>
+                Please follow the event signage and coordinator instructions for the exact room or floor.
+              </div>
+            </div>
+            <div className="mt-6 flex items-center gap-2 text-xs font-tech text-emerald-300"><ClipboardList size={15}/> Report to the registration desk first.</div>
           </div>
 
-          {/* Tactical Blueprint Display */}
-          <div className="lg:col-span-7">
-            <div className="doom-card rounded-2xl p-8 border-2 border-emerald-500/40 relative overflow-hidden">
-              
-              {/* Radar Grid Graphic */}
-              <div className="flex items-center justify-between border-b border-emerald-500/30 pb-4 mb-6">
-                <div>
-                  <span className="text-[10px] font-tech font-bold uppercase tracking-widest text-emerald-400 block">
-                    SECTOR BLUEPRINT
-                  </span>
-                  <h3 className="font-avengers text-3xl sm:text-4xl text-avengers-chrome italic">
-                    {spots[selectedSpot].name.toUpperCase()}
-                  </h3>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-950 border border-emerald-500/40 text-emerald-400">
-                  <Navigation size={24} className="animate-pulse" />
-                </div>
+          <div className="lg:col-span-3 doom-card rounded-2xl p-7 border border-emerald-500/25">
+            <div className="flex items-center justify-between gap-3 mb-5">
+              <div>
+                <span className="font-tech text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">Event list</span>
+                <h3 className="font-avengers text-2xl sm:text-3xl text-slate-100 mt-1">EIGHT EVENT ARENAS</h3>
               </div>
-
-              {/* Coordinates Details */}
-              <div className="space-y-4 mb-8 text-xs font-tech">
-                <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800">
-                  <span className="text-slate-400 block text-[11px] uppercase mb-1">Assigned Battle Arena</span>
-                  <span className="text-emerald-300 font-bold text-base">{spots[selectedSpot].arena}</span>
+              <span className="text-xs font-tech text-slate-500">04.12.2026</span>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-2">
+              {eventNames.map((name, index) => (
+                <div key={name} className="flex items-start gap-3 p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+                  <span className="font-avengers text-lg text-emerald-400 italic">0{index + 1}</span>
+                  <span className="font-tech text-xs text-slate-200 leading-relaxed">{name}</span>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800">
-                    <span className="text-slate-400 block text-[11px] uppercase mb-1">Floor Level</span>
-                    <span className="text-slate-200 font-semibold">{spots[selectedSpot].floor}</span>
-                  </div>
-                  <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800">
-                    <span className="text-slate-400 block text-[11px] uppercase mb-1">Titan Guardian</span>
-                    <span className="text-slate-200 font-semibold">{spots[selectedSpot].hero}</span>
-                  </div>
-                </div>
-
-                <p className="text-slate-300 leading-relaxed p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/20">
-                  {spots[selectedSpot].desc}
-                </p>
-              </div>
-
-              {/* Amenities Bar */}
-              <div className="pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4 text-xs font-tech text-slate-400">
-                <div className="flex items-center gap-2">
-                  <Coffee size={15} className="text-amber-400" />
-                  <span>Canteen & Cafeteria: Ground Floor</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Bus size={15} className="text-emerald-400" />
-                  <span>College Transit Desk: Gate 1</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={15} className="text-cyan-400" />
-                  <span>Help Desk: Main Lobby</span>
-                </div>
-              </div>
-
+              ))}
             </div>
           </div>
-
         </div>
-
       </div>
     </section>
   );
