@@ -67,6 +67,7 @@ export default function RegistrationChatbot() {
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [profileEditDraft, setProfileEditDraft] = useState<ParticipantProfile | null>(null);
   const [profileEditorBusy, setProfileEditorBusy] = useState(false);
+  const [profileFieldsLocked, setProfileFieldsLocked] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: "welcome-message", role: "assistant", text: "Welcome to DATAVERSE 2K26! I’m your registration assistant. Let’s get you ready for the fest." },
   ]);
@@ -131,6 +132,7 @@ export default function RegistrationChatbot() {
           const profileData = await readJson(profileResponse);
           if (!active) return;
           const restoredProfile = profileData.participant as ParticipantProfile;
+          setProfileFieldsLocked(Boolean(profileData.hasEventRegistrations));
           setProfile(restoredProfile);
           setDraft(restoredProfile);
           setMode("events");
@@ -222,7 +224,8 @@ export default function RegistrationChatbot() {
     appendAssistant("I can help with that. Enter the mobile number you used during registration. I’ll send a verification code before showing the ID.");
   };
 
-  const loadEvents = async (participant: ParticipantProfile) => {
+  const loadEvents = async (participant: ParticipantProfile, hasExistingEventRegistrations = false) => {
+    setProfileFieldsLocked(hasExistingEventRegistrations);
     setProfile(participant);
     setDraft(participant);
     window.sessionStorage.removeItem(STORAGE_KEY);
@@ -311,7 +314,7 @@ export default function RegistrationChatbot() {
           body: JSON.stringify(finalDraft),
         });
         const data = await readJson(response);
-        await loadEvents(data.participant);
+        await loadEvents(data.participant, Boolean(data.hasEventRegistrations));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to save your details.");
         appendAssistant("I couldn't save those details yet. Please check the information and try again.");
@@ -413,6 +416,7 @@ export default function RegistrationChatbot() {
       addMessage("user", "Register my team for " + selectedEvent.name + ".");
       appendAssistant(data.message + " Your team has " + data.teamSize + " participant(s). You can choose another event if you are eligible.");
       setRegisteredEventSlugs((current) => current.includes(selectedEvent.slug) ? current : [...current, selectedEvent.slug]);
+      setProfileFieldsLocked(true);
       setSelectedEvent(null);
       setMembers([]);
     } catch (err) {
@@ -773,17 +777,17 @@ export default function RegistrationChatbot() {
               </label>
               <label className="block space-y-1.5">
                 <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">College</span>
-                <input required minLength={2} maxLength={180} value={profileEditDraft.college} disabled={registeredEventSlugs.length > 0} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, college: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+                <input required minLength={2} maxLength={180} value={profileEditDraft.college} disabled={profileFieldsLocked || registeredEventSlugs.length > 0} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, college: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
               </label>
               <label className="block space-y-1.5">
                 <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">City</span>
-                <input required minLength={2} maxLength={100} value={profileEditDraft.city} disabled={registeredEventSlugs.length > 0} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, city: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+                <input required minLength={2} maxLength={100} value={profileEditDraft.city} disabled={profileFieldsLocked || registeredEventSlugs.length > 0} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, city: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
               </label>
               <label className="block space-y-1.5">
                 <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">Department</span>
-                <input required minLength={2} maxLength={120} value={profileEditDraft.department} disabled={registeredEventSlugs.length > 0} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, department: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+                <input required minLength={2} maxLength={120} value={profileEditDraft.department} disabled={profileFieldsLocked || registeredEventSlugs.length > 0} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, department: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
               </label>
-              {registeredEventSlugs.length > 0 && (
+              {(profileFieldsLocked || registeredEventSlugs.length > 0) && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs font-tech leading-relaxed text-amber-200">
                   You have already registered for an event. College, city and department are locked because they are part of the saved event registration. Your name can still be corrected. For other corrections, contact the organisers.
                 </div>
