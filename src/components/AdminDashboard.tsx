@@ -412,6 +412,7 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
                                     <div className="text-[9px] uppercase tracking-widest text-slate-500 font-tech mb-2">Registration contact</div>
                                     <div className="text-xs font-tech text-slate-200">{item.contact?.name || "Not available"}</div>
                                     {item.contact?.mobile && <a className="text-xs font-tech text-emerald-300 hover:underline" href={"tel:" + item.contact.mobile}>{item.contact.mobile}</a>}
+                                    {item.contact?.email && <a className="block text-xs font-tech text-sky-300 hover:underline" href={"mailto:" + item.contact.email}>{item.contact.email}</a>}
                                   </div>
                                 </div>
                               </td>
