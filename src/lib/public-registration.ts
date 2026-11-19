@@ -133,7 +133,7 @@ export async function getPublicRegistrationStatus() {
   const deadline = settings?.registrationDeadline ? new Date(settings.registrationDeadline).getTime() : null;
   const registrationOpen = settings
     ? settings.registrationEnabled !== false && settings.maintenanceMode !== true && (!deadline || deadline > now)
-    : true;
+    : false;
 
   const releaseValue = process.env.DATAVERSE_ID_LOOKUP_ENABLED_AT;
   const releaseDate = releaseValue ? new Date(releaseValue) : null;

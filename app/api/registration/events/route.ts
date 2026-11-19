@@ -1,15 +1,21 @@
 import { connection, NextResponse } from "next/server";
 import { SYMPOSIUM_EVENTS } from "@/src/data/events";
 import { getPublicRegistrationStatus } from "@/src/lib/public-registration";
+import { getEventRegistrationSettings } from "@/src/lib/event-registration-settings";
 export async function GET() {
   await connection();
   try {
-    const status = await getPublicRegistrationStatus();
+    const [status, eventSettings] = await Promise.all([
+      getPublicRegistrationStatus(),
+      getEventRegistrationSettings(),
+    ]);
+    const eventOpenBySlug = new Map(eventSettings.map((event) => [event.slug, event.registrationOpen]));
     const events = SYMPOSIUM_EVENTS.map((event) => ({
       id: event.id, slug: event.slug, name: event.name, tagline: event.tagline,
       description: event.description, teamSize: event.teamSize,
       minTeam: event.minTeam, maxTeam: event.maxTeam, rules: event.rules,
-      image: event.character.image, registrationOpen: status.registrationOpen,
+      image: event.character.image,
+      registrationOpen: status.registrationOpen && Boolean(eventOpenBySlug.get(event.slug)),
     }));
     return NextResponse.json({ success: true, registrationOpen: status.registrationOpen, events });
   } catch (error) {

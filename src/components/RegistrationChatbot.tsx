@@ -72,7 +72,7 @@ export default function RegistrationChatbot() {
   const [suggestions, setSuggestions] = useState<CollegeSuggestion[]>([]);
   const [selectedCollege, setSelectedCollege] = useState<CollegeSuggestion | null>(null);
   const [events, setEvents] = useState<EventCard[]>([]);
-  const [registrationOpen, setRegistrationOpen] = useState(true);
+  const [registrationOpen, setRegistrationOpen] = useState(false);
   const [registeredEventSlugs, setRegisteredEventSlugs] = useState<string[]>([]);
   const [status, setStatus] = useState({ idLookupEnabled: false, idLookupEnabledAt: null as string | null });
   const [selectedEvent, setSelectedEvent] = useState<EventCard | null>(null);
@@ -118,6 +118,7 @@ export default function RegistrationChatbot() {
         ]);
         const statusData = await readJson(statusResponse);
         if (!active) return;
+        setRegistrationOpen(Boolean(statusData.registrationOpen));
         setStatus({
           idLookupEnabled: Boolean(statusData.idLookupEnabled),
           idLookupEnabledAt: statusData.idLookupEnabledAt ?? null,
@@ -522,8 +523,8 @@ export default function RegistrationChatbot() {
 
               {mode === "welcome" && (
                 <div className="ml-1 flex flex-col sm:flex-row gap-2">
-                  <button onClick={startRegistration} className="px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-black font-avengers tracking-wider text-lg flex items-center justify-center gap-2 hover:brightness-110 transition">
-                    Start registration <ArrowRight size={16}/>
+                  <button onClick={startRegistration} disabled={!registrationOpen} className="px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-black font-avengers tracking-wider text-lg flex items-center justify-center gap-2 hover:brightness-110 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                    {registrationOpen ? "Start registration" : "Registration closed"} <ArrowRight size={16}/>
                   </button>
                   {status.idLookupEnabled && (
                     <button onClick={startIdLookup} className="px-4 py-3 rounded-xl bg-slate-900 border border-emerald-500/40 text-emerald-300 font-tech font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-emerald-950/40 transition">
@@ -573,7 +574,7 @@ export default function RegistrationChatbot() {
                           <div className="text-[10px] text-slate-300 flex items-center gap-1.5"><Users size={12} className="text-emerald-400"/>{event.teamSize}</div>
                           <div className="grid grid-cols-2 gap-2 pt-1">
                             <button onClick={() => setShowRulesFor(event)} className="rounded-lg border border-slate-700 bg-slate-900 py-2 text-[10px] font-tech font-bold uppercase tracking-wider text-slate-300 hover:border-emerald-500/40">View rules</button>
-                            <button disabled={!registrationOpen || !event.registrationOpen || registeredEventSlugs.includes(event.slug)} onClick={() => openEventDialog(event)} className="rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 py-2 text-[10px] font-tech font-bold uppercase tracking-wider text-black disabled:opacity-40 disabled:cursor-not-allowed">{registeredEventSlugs.includes(event.slug) ? "Registered" : "Choose event"}</button>
+                            <button disabled={!registrationOpen || !event.registrationOpen || registeredEventSlugs.includes(event.slug)} onClick={() => openEventDialog(event)} className="rounded-lg bg-gradient-to-r from-emerald-500 to-green-600 py-2 text-[10px] font-tech font-bold uppercase tracking-wider text-black disabled:opacity-40 disabled:cursor-not-allowed">{registeredEventSlugs.includes(event.slug) ? "Registered" : !registrationOpen || !event.registrationOpen ? "Registration closed" : "Choose event"}</button>
                           </div>
                         </div>
                       </div>

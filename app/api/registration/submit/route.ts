@@ -12,6 +12,7 @@ import {
   normalizeIndianMobile,
   normalizeKey,
 } from "@/src/lib/public-registration";
+import { isEventRegistrationOpen } from "@/src/lib/event-registration-settings";
 
 const schema = z.object({
   eventSlug: z.string().trim().min(2).max(80),
@@ -73,6 +74,9 @@ export async function POST(request: Request) {
     claimedEventSlug = event?.slug ?? "";
     if (!event) {
       return NextResponse.json({ success: false, message: "That event is not available." }, { status: 404 });
+    }
+    if (!(await isEventRegistrationOpen(event.slug))) {
+      return NextResponse.json({ success: false, message: "Registration for " + event.name + " is currently closed." }, { status: 409 });
     }
 
     if (parsed.data.members.length < event.minTeam || parsed.data.members.length > event.maxTeam) {

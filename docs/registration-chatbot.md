@@ -45,7 +45,18 @@ The autocomplete directory is a maintained snapshot of the public lists linked a
 
 ## Settings and event rules
 
-The public registration API checks the existing DATAVERSE Settings record. Registration is open when registrationEnabled is true, maintenance mode is off, and the configured deadline has not passed. If no settings record exists, the public flow defaults to open; set the settings record before launch.
+The public registration API checks the DATAVERSE Settings record. Registration is open only when registrationEnabled is true, maintenance mode is off, and the configured deadline has not passed. If no settings record exists, registration defaults to closed. The first seed also initializes registration as closed, so an admin must explicitly open it.
+
+## Admin dashboard
+
+- Open `/admin/login` and sign in using the seeded admin account.
+- The dashboard is available at `/admin`.
+- The global registration gate opens or closes all public event submissions.
+- Each event has a separate registration switch. Turning one event off does not close the others.
+- The registrations table shows registration reference, event, college, city, department, team members and mobile numbers. It supports searching, event/status filters, pagination and CSV export of the current page.
+- Dashboard APIs require the existing admin session and the permissions `settings:manage`, `events:manage` and `registrations:view`. The seeded superadmin has all permissions.
+- Seed the first admin using `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` and `SEED_ADMIN_NAME`, then run `npm run seed`.
+- Rerunning the seed updates event details but preserves each event's registration switch and the global registration setting.
 
 The current rulebook rules are encoded in src/data/events.ts and enforced server-side. If organisers change team sizes or restrictions, update the event catalog and this validation together.
 

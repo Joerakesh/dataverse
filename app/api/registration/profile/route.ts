@@ -1,6 +1,6 @@
 import { connection, NextResponse } from "next/server";
 import { z } from "zod";
-import { createOrFindParticipant, createRegistrationFlow, getFlowParticipant, normalizeIndianMobile } from "@/src/lib/public-registration";
+import { createOrFindParticipant, createRegistrationFlow, getFlowParticipant, getPublicRegistrationStatus, normalizeIndianMobile } from "@/src/lib/public-registration";
 const schema = z.object({
   name: z.string().trim().min(2).max(100),
   mobile: z.string().trim().min(10).max(20),
@@ -24,6 +24,10 @@ export async function GET() {
 }
 export async function POST(request: Request) {
   try {
+    const status = await getPublicRegistrationStatus();
+    if (!status.registrationOpen) {
+      return NextResponse.json({ success: false, message: "Online registration is currently closed. Please check back when the organisers reopen it." }, { status: 409 });
+    }
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ success: false, message: "Please check all your details.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
     let mobile: string;
