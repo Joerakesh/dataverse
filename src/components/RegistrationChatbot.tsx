@@ -46,7 +46,7 @@ function normalizeTeamMobile(value: string) {
 }
 
 function makeMessage(role: ChatMessage["role"], text: string): ChatMessage {
-  return { id: Math.random().toString(36).slice(2), role, text };
+  return { id: crypto.randomUUID(), role, text };
 }
 
 async function readJson(response: Response) {
@@ -65,7 +65,7 @@ export default function RegistrationChatbot() {
   });
   const [profile, setProfile] = useState<ParticipantProfile | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    makeMessage("assistant", "Welcome to DATAVERSE 2K26! I’m your registration assistant. Let’s get you ready for the fest."),
+    { id: "welcome-message", role: "assistant", text: "Welcome to DATAVERSE 2K26! I’m your registration assistant. Let’s get you ready for the fest." },
   ]);
   const [answer, setAnswer] = useState("");
   const [intentText, setIntentText] = useState("");
