@@ -76,7 +76,7 @@ export default function LoreSection() {
                   </h4>
                 </div>
                 <p className="font-tech text-xs text-slate-400 leading-relaxed">
-                  Only one department team per institution may enter each arena. Bring your bonafide clearance and prove your institution’s superiority.
+                  Only one team per department/college may enter each event, except Dark Quest which allows up to two teams per college. Bring your valid College ID and Bonafide Certificate.
                 </p>
               </div>
             </div>

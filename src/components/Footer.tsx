@@ -1,5 +1,5 @@
 import React from "react";
-import { Shield, ArrowUp, Heart, Sparkles, Download } from "lucide-react";
+import { ArrowUp, Sparkles, Download } from "lucide-react";
 import { sounds } from "@/src/utils/soundEffects";
 
 export default function Footer() {
@@ -34,7 +34,7 @@ export default function Footer() {
               Loyola College (Autonomous), Chennai • Dept of Data Science & SAGE
             </p>
             <p className="font-tech text-sm text-slate-400 max-w-md leading-relaxed mb-4">
-              The premier National Level Technical Symposium uniting machine learning, agentic workflows, startup pitching, and algorithmic mastery under the sovereign decree of Dr. Doom.
+              An inter-collegiate technical fest by the Department of Data Science, Loyola College, in association with SAGE. A day of innovation, creativity and competition.
             </p>
             <div className="inline-flex items-center gap-2 text-xs font-tech text-emerald-400">
               <Sparkles size={14} />
@@ -50,7 +50,7 @@ export default function Footer() {
             <ul className="space-y-2 text-xs font-tech uppercase text-slate-400">
               <li>
                 <a href="#events" className="hover:text-emerald-400 transition-colors">
-                  Battle Arenas (7 Events)
+                  Events (8)
                 </a>
               </li>
               <li>
@@ -92,18 +92,16 @@ export default function Footer() {
             </h4>
             <div className="space-y-2 text-xs font-tech text-slate-300">
               <div>
-                <span className="text-slate-400 block text-[11px] uppercase">Head Convener:</span>
-                <a href="tel:7305462733" className="text-emerald-400 font-bold hover:underline">
-                  Godwin Sam J: 7305462733
-                </a>
+                <span className="text-slate-400 block text-[11px] uppercase">Association Secretary:</span>
+                <a href="tel:9043183343" className="text-emerald-400 font-bold hover:underline">Florina: 9043183343</a>
               </div>
               <div className="pt-2">
-                <span className="text-slate-400 block text-[11px] uppercase">Classified Flagship Event:</span>
-                <span className="text-slate-200">Silverster Jones: 8838484856</span>
+                <span className="text-slate-400 block text-[11px] uppercase">Joint Secretary:</span>
+                <a href="tel:7305462733" className="text-emerald-400 font-bold hover:underline">Godwin Sam: 7305462733</a>
               </div>
               <div className="pt-1">
-                <span className="text-slate-400 block text-[11px] uppercase">Citadel Venue:</span>
-                <span className="text-slate-200">Main Registration Desk, Ground Floor</span>
+                <span className="text-slate-400 block text-[11px] uppercase">Venue:</span>
+                <span className="text-slate-200">Centenary Building, Loyola College</span>
               </div>
             </div>
           </div>
