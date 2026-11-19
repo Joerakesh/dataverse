@@ -758,13 +758,13 @@ export default function RegistrationChatbot() {
             )}
 
             {mode === "lookup-mobile" && (
-              <form onSubmit={requestOtp} className="p-3 sm:p-4 border-t border-emerald-500/20 bg-slate-950">
-                <div className="flex items-center gap-2">
-                  <Phone size={16} className="text-emerald-400"/>
-                  <input value={lookupMobile} onChange={(event) => setLookupMobile(event.target.value)} type="tel" inputMode="tel" maxLength={14} placeholder="Registered 10-digit mobile number" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500"/>
-                  <button type="submit" disabled={busy || !lookupMobile.trim()} className="h-11 px-4 rounded-xl bg-emerald-500 text-black font-tech font-bold text-xs uppercase disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Send OTP"}</button>
+              <form onSubmit={requestOtp} className="shrink-0 border-t border-emerald-500/20 bg-slate-950 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+12px)] sm:px-5">
+                <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
+                  <Phone size={17} className="shrink-0 text-emerald-400"/>
+                  <input value={lookupMobile} onChange={(event) => setLookupMobile(event.target.value)} type="tel" inputMode="tel" autoComplete="tel" maxLength={14} placeholder="Registered 10-digit mobile number" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500" disabled={busy}/>
+                  <button type="submit" disabled={busy || !lookupMobile.trim()} className="h-11 shrink-0 rounded-xl bg-emerald-500 px-4 text-xs font-tech font-bold uppercase text-black disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Send OTP"}</button>
                 </div>
-                {error && <p className="text-xs font-tech text-red-400 mt-2">{error}</p>}
+                {error && <p className="mx-auto mt-2 w-full max-w-4xl text-xs font-tech text-red-400">{error}</p>}
               </form>
             )}
 
@@ -797,7 +797,10 @@ export default function RegistrationChatbot() {
                   <input value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="6-digit login code" className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech tracking-[0.3em] text-slate-100 outline-none focus:border-emerald-500" disabled={busy}/>
                   <button type="submit" disabled={busy || otp.length !== 6} className="h-11 shrink-0 rounded-xl bg-emerald-500 px-4 text-xs font-tech font-bold uppercase text-black disabled:opacity-40">{busy ? <Loader2 size={17} className="animate-spin"/> : "Verify & login"}</button>
                 </div>
-                {error && <p className="mx-auto mt-2 w-full max-w-4xl text-xs font-tech text-red-400">{error}</p>}
+                <div className="mx-auto mt-2 w-full max-w-4xl flex items-center justify-between gap-3">
+                  {error ? <p className="text-xs font-tech text-red-400">{error}</p> : <span className="text-[10px] font-tech text-slate-500">Code expires in five minutes.</span>}
+                  <button type="button" onClick={() => { setMode("login-mobile"); setOtp(""); setError(""); }} className="shrink-0 text-[10px] font-tech font-bold uppercase tracking-wider text-emerald-300 hover:text-emerald-200">Change mobile</button>
+                </div>
               </form>
             )}
 
