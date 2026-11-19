@@ -14,10 +14,17 @@ export function normalizeKey(value: string) {
 
 export function normalizeIndianMobile(value: string) {
   const digits = value.replace(/\D/g, "");
-  if (digits.length === 10) return digits;
-  if (digits.length === 12 && digits.startsWith("91")) return digits.slice(2);
-  if (digits.length === 11 && digits.startsWith("0")) return digits.slice(1);
-  throw new Error("Enter a valid 10-digit Indian mobile number.");
+  const mobile = digits.length === 10
+    ? digits
+    : digits.length === 12 && digits.startsWith("91")
+      ? digits.slice(2)
+      : digits.length === 11 && digits.startsWith("0")
+        ? digits.slice(1)
+        : "";
+  if (!/^[6-9]\d{9}$/.test(mobile)) {
+    throw new Error("Enter a valid 10-digit Indian mobile number.");
+  }
+  return mobile;
 }
 
 function hashToken(token: string) {
