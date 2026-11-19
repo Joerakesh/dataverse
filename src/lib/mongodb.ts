@@ -1,11 +1,5 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI is missing in environment variables");
-}
-
 interface MongoCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -27,10 +21,20 @@ export async function connectDB() {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI!);
+    // Resolve the URI when a request actually needs MongoDB. This keeps Next.js
+    // build-time route discovery from failing simply because Preview env vars
+    // are not present in the build container.
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      throw new Error("MONGODB_URI is missing in environment variables");
+    }
+
+    cached.promise = mongoose.connect(mongoUri).catch((error) => {
+      cached.promise = null;
+      throw error;
+    });
   }
 
   cached.conn = await cached.promise;
-
   return cached.conn;
 }
