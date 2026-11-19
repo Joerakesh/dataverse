@@ -1,5 +1,6 @@
 import { connection, NextResponse } from "next/server";
 import { z } from "zod";
+import { Types } from "mongoose";
 import EventRegistration from "@/models/EventRegistration";
 import Participant from "@/models/Participant";
 import EventCollegeQuota from "@/models/EventCollegeQuota";
@@ -60,7 +61,7 @@ export async function PATCH(
     }
 
     const memberExists = registration.members.some(
-      (member) => member.participantId.toString() === parsed.data.participantId,
+      (member: { participantId: Types.ObjectId }) => member.participantId.toString() === parsed.data.participantId,
     );
     if (!memberExists) {
       return NextResponse.json({ success: false, message: "That participant is not part of this registration." }, { status: 404 });
@@ -171,14 +172,14 @@ export async function DELETE(
 
     if (parsed.data.participantId) {
       const member = registration.members.find(
-        (item) => item.participantId.toString() === parsed.data.participantId,
+        (item: { participantId: Types.ObjectId }) => item.participantId.toString() === parsed.data.participantId,
       );
       if (!member) {
         return NextResponse.json({ success: false, message: "That participant is not part of this registration." }, { status: 404 });
       }
 
       const remainingMembers = registration.members.filter(
-        (item) => item.participantId.toString() !== parsed.data.participantId,
+        (item: { participantId: Types.ObjectId }) => item.participantId.toString() !== parsed.data.participantId,
       );
       const event = SYMPOSIUM_EVENTS.find((item) => item.slug === registration.eventSlug);
       const minimumTeamSize = event?.minTeam ?? 1;
@@ -204,7 +205,7 @@ export async function DELETE(
       });
     }
 
-    const participantIds = registration.members.map((member) => member.participantId);
+    const participantIds = registration.members.map((member: { participantId: Types.ObjectId }) => member.participantId);
     const eventSlug = registration.eventSlug;
     const collegeKey = registration.collegeKey;
 
@@ -220,7 +221,7 @@ export async function DELETE(
     }
 
     await Promise.all(
-      participantIds.map((participantId) =>
+      participantIds.map((participantId: Types.ObjectId) =>
         releaseEventFromParticipantIfUnused(participantId, eventSlug, registration._id),
       ),
     );
