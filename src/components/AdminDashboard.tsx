@@ -1,11 +1,11 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Activity, CalendarClock, CheckCircle2, ChevronLeft, ChevronRight,
   CircleAlert, ClipboardList, Download, LoaderCircle, LogOut,
-  RefreshCw, Search, ToggleLeft, ToggleRight, Users, XCircle, Building2,
+  RefreshCw, Search, ToggleLeft, ToggleRight, Users, XCircle, Building2, Pencil, Trash2, Save,
 } from "lucide-react";
 
 type AdminInfo = { name: string; email: string; role: string; permissions: string[] };
@@ -23,7 +23,7 @@ type EventItem = {
   teamSize: string;
   registrationOpen: boolean;
 };
-type Member = { name: string; mobile: string; email: string };
+type Member = { id: string; name: string; mobile: string; email: string };
 type Registration = {
   id: string;
   reference: string;
@@ -80,6 +80,7 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
   const canManageSettings = hasPermission("settings:manage");
   const canManageEvents = hasPermission("events:manage");
   const canViewRegistrations = hasPermission("registrations:view");
+  const canManageRegistrations = hasPermission("registrations:manage");
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -97,6 +98,9 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [expanded, setExpanded] = useState("");
+  const [editingMember, setEditingMember] = useState<{ registrationId: string; member: Member } | null>(null);
+  const [memberForm, setMemberForm] = useState({ name: "", mobile: "", email: "" });
+  const [savingMember, setSavingMember] = useState("");
 
   const signOut = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => undefined);
@@ -197,6 +201,89 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
       setError(caught instanceof Error ? caught.message : "Unable to update event registration.");
     } finally {
       setSavingEvent("");
+    }
+  };
+
+  const openMemberEditor = (registrationId: string, member: Member) => {
+    setEditingMember({ registrationId, member });
+    setMemberForm({ name: member.name, mobile: member.mobile, email: member.email });
+    setError("");
+    setNotice("");
+  };
+
+  const saveMember = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editingMember) return;
+    setSavingMember(editingMember.member.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/registrations/" + editingMember.registrationId, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          participantId: editingMember.member.id,
+          ...memberForm,
+        }),
+      });
+      const data = await readJson(response);
+      setEditingMember(null);
+      setNotice(data.message || "Participant updated.");
+      await loadRegistrations();
+    } catch (caught) {
+      if (caught instanceof Error && caught.message === "SESSION_EXPIRED") {
+        router.replace("/admin/login");
+        return;
+      }
+      setError(caught instanceof Error ? caught.message : "Unable to update participant.");
+    } finally {
+      setSavingMember("");
+    }
+  };
+
+  const removeMember = async (registration: Registration, member: Member) => {
+    if (!window.confirm("Remove " + member.name + " from " + registration.eventName + "? Their profile and other event registrations will remain.")) return;
+    setSavingMember(member.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/registrations/" + registration.id, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ participantId: member.id }),
+      });
+      const data = await readJson(response);
+      setNotice(data.message || "Participant removed from the team.");
+      await loadRegistrations();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to remove participant.");
+    } finally {
+      setSavingMember("");
+    }
+  };
+
+  const cancelTeam = async (registration: Registration) => {
+    if (!window.confirm("Cancel the entire team registration " + registration.reference + "? This will release its event slot.")) return;
+    setSavingMember(registration.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/registrations/" + registration.id, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({}),
+      });
+      const data = await readJson(response);
+      setNotice(data.message || "Team registration cancelled.");
+      setExpanded("");
+      await loadRegistrations();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Unable to cancel team registration.");
+    } finally {
+      setSavingMember("");
     }
   };
 
@@ -406,7 +493,25 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
                                   <div>
                                     <div className="text-[9px] uppercase tracking-widest text-slate-500 font-tech mb-2">Registered team members</div>
                                     <div className="space-y-2">
-                                      {item.members.map((member) => <div key={member.mobile} className="flex flex-wrap justify-between gap-2 text-xs font-tech"><span className="text-slate-200">{member.name}</span><div className="flex flex-col items-end"><a className="text-emerald-300 hover:underline" href={"tel:" + member.mobile}>{member.mobile}</a>{member.email && <a className="text-[11px] text-sky-300 hover:underline" href={"mailto:" + member.email}>{member.email}</a>}</div></div>)}
+                                      {item.members.map((member) => (
+                                        <div key={member.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-800 bg-[#071015] px-3 py-2">
+                                          <div className="min-w-0">
+                                            <div className="text-xs font-tech font-bold text-slate-200">{member.name}</div>
+                                            <a className="block text-[11px] font-tech text-emerald-300 hover:underline" href={"tel:" + member.mobile}>{member.mobile}</a>
+                                            {member.email && <a className="block text-[11px] font-tech text-sky-300 hover:underline" href={"mailto:" + member.email}>{member.email}</a>}
+                                          </div>
+                                          {canManageRegistrations && item.status === "confirmed" && (
+                                            <div className="flex items-center gap-2">
+                                              <button type="button" onClick={() => openMemberEditor(item.id, member)} className="inline-flex items-center gap-1 rounded-md border border-slate-700 px-2 py-1.5 text-[10px] font-tech font-bold uppercase text-slate-300 hover:border-emerald-500/50 hover:text-emerald-300">
+                                                <Pencil size={12}/> Edit
+                                              </button>
+                                              <button type="button" disabled={savingMember === member.id} onClick={() => void removeMember(item, member)} className="inline-flex items-center gap-1 rounded-md border border-red-500/30 px-2 py-1.5 text-[10px] font-tech font-bold uppercase text-red-300 hover:bg-red-950/40 disabled:opacity-50">
+                                                {savingMember === member.id ? <LoaderCircle size={12} className="animate-spin"/> : <Trash2 size={12}/>} Remove
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
                                     </div>
                                   </div>
                                   <div>
@@ -416,6 +521,13 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
                                     {item.contact?.email && <a className="block text-xs font-tech text-sky-300 hover:underline" href={"mailto:" + item.contact.email}>{item.contact.email}</a>}
                                   </div>
                                 </div>
+                                {canManageRegistrations && item.status === "confirmed" && (
+                                  <div className="mt-4 flex justify-end border-t border-slate-800 pt-3">
+                                    <button type="button" disabled={savingMember === item.id} onClick={() => void cancelTeam(item)} className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 px-3 py-2 text-[10px] font-tech font-bold uppercase tracking-wider text-red-300 hover:bg-red-950/40 disabled:opacity-50">
+                                      {savingMember === item.id ? <LoaderCircle size={13} className="animate-spin"/> : <XCircle size={13}/>} Cancel entire team
+                                    </button>
+                                  </div>
+                                )}
                               </td>
                             </tr>
                           )}
@@ -437,9 +549,42 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
           </section>
         )}
 
+        {editingMember && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditingMember(null); }}>
+            <form onSubmit={saveMember} className="w-full max-w-lg space-y-4 rounded-2xl border border-emerald-500/30 bg-[#081116] p-5 shadow-2xl shadow-black/50">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[10px] font-tech font-bold uppercase tracking-[.2em] text-emerald-400">Participant management</div>
+                  <h3 className="mt-1 font-avengers text-2xl tracking-wide text-slate-100">EDIT PARTICIPANT</h3>
+                  <p className="mt-1 text-xs font-tech text-slate-500">Changes update this participant&apos;s profile across all event registrations.</p>
+                </div>
+                <button type="button" onClick={() => setEditingMember(null)} className="rounded-lg border border-slate-700 p-2 text-slate-400 hover:text-white" aria-label="Close editor"><XCircle size={17}/></button>
+              </div>
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-tech uppercase tracking-wider text-slate-400">Full name</span>
+                <input required minLength={2} maxLength={100} value={memberForm.name} onChange={(event) => setMemberForm((current) => ({ ...current, name: event.target.value }))} className="w-full rounded-lg border border-slate-700 bg-[#04090c] px-3 py-2.5 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500"/>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-tech uppercase tracking-wider text-slate-400">Mobile number</span>
+                <input required inputMode="tel" maxLength={20} value={memberForm.mobile} onChange={(event) => setMemberForm((current) => ({ ...current, mobile: event.target.value }))} className="w-full rounded-lg border border-slate-700 bg-[#04090c] px-3 py-2.5 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500"/>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-tech uppercase tracking-wider text-slate-400">Email address</span>
+                <input required type="email" maxLength={254} value={memberForm.email} onChange={(event) => setMemberForm((current) => ({ ...current, email: event.target.value }))} className="w-full rounded-lg border border-slate-700 bg-[#04090c] px-3 py-2.5 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500"/>
+              </label>
+              <div className="flex flex-wrap justify-end gap-2 border-t border-slate-800 pt-4">
+                <button type="button" onClick={() => setEditingMember(null)} className="rounded-lg border border-slate-700 px-4 py-2.5 text-xs font-tech font-bold uppercase text-slate-300 hover:bg-slate-900">Cancel</button>
+                <button type="submit" disabled={savingMember === editingMember.member.id} className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-xs font-tech font-bold uppercase text-slate-950 hover:bg-emerald-400 disabled:opacity-50">
+                  {savingMember === editingMember.member.id ? <LoaderCircle size={14} className="animate-spin"/> : <Save size={14}/>} Save changes
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {!canManageSettings && !canManageEvents && !canViewRegistrations && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-5 text-sm font-tech text-amber-200">
-            Your admin account is signed in, but it does not have dashboard permissions. Ask the superadmin to grant settings:manage, events:manage and registrations:view.
+            Your admin account is signed in, but it does not have dashboard permissions. Ask the superadmin to grant settings:manage, events:manage, registrations:view and registrations:manage.
           </div>
         )}
 

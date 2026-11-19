@@ -74,7 +74,7 @@ export async function GET(request: Request) {
               email: "email" in item.contactParticipantId ? item.contactParticipantId.email : "",
             }
           : null,
-        members: item.members.map((member: { name: string; mobile: string; email?: string }) => ({ name: member.name, mobile: member.mobile, email: member.email ?? "" })),
+        members: item.members.map((member: { participantId: { toString(): string } | string; name: string; mobile: string; email?: string }) => ({ id: member.participantId.toString(), name: member.name, mobile: member.mobile, email: member.email ?? "" })),
       })),
       pagination: {
         page,
