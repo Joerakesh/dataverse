@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { connection, NextResponse } from "next/server";
 import EventRegistration from "@/models/EventRegistration";
 import { getFlowParticipant } from "@/src/lib/public-registration";
 
 export async function GET() {
+  await connection();
   try {
     const participant = await getFlowParticipant();
     if (!participant) {

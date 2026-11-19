@@ -2,8 +2,8 @@ import { connection, NextResponse } from "next/server";
 import { getCurrentAccount } from "@/src/lib/auth";
 
 export async function GET() {
+  await connection();
   try {
-    await connection();
     const current = await getCurrentAccount();
 
     if (!current) {

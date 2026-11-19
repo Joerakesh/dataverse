@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { connection, NextResponse } from "next/server";
 import { z } from "zod";
 import { createOrFindParticipant, createRegistrationFlow, getFlowParticipant, normalizeIndianMobile } from "@/src/lib/public-registration";
 const schema = z.object({
@@ -9,6 +9,7 @@ const schema = z.object({
   department: z.string().trim().min(2).max(120),
 });
 export async function GET() {
+  await connection();
   try {
     const participant = await getFlowParticipant();
     if (!participant) return NextResponse.json({ success: false, message: "No active registration flow." }, { status: 401 });

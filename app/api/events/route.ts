@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { connection, NextResponse } from "next/server";
 import Event from "@/models/Event";
 import { connectDB } from "@/src/lib/mongodb";
 
 export async function GET() {
+  await connection();
   try {
     await connectDB();
     const events = await Event.find({ status: "published" }).sort({ displayOrder: 1, date: 1 }).lean();

@@ -2,8 +2,8 @@ import { connection, NextResponse } from "next/server";
 import { SYMPOSIUM_EVENTS } from "@/src/data/events";
 import { getPublicRegistrationStatus } from "@/src/lib/public-registration";
 export async function GET() {
+  await connection();
   try {
-    await connection();
     const status = await getPublicRegistrationStatus();
     const events = SYMPOSIUM_EVENTS.map((event) => ({
       id: event.id, slug: event.slug, name: event.name, tagline: event.tagline,
