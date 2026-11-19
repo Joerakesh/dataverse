@@ -10,7 +10,7 @@ import {
   normalizeRegistrationEmail,
 } from "@/src/lib/public-registration";
 
-const idSchema = z.string().regex(/^[a-f\\d]{24}$/i);
+const idSchema = z.string().regex(/^[a-f\d]{24}$/i);
 const updateMemberSchema = z.object({
   participantId: idSchema,
   name: z.string().trim().min(2).max(100),
@@ -191,6 +191,9 @@ export async function DELETE(
 
       registration.members = remainingMembers;
       registration.teamSize = remainingMembers.length;
+      if (registration.contactParticipantId.toString() === parsed.data.participantId) {
+        registration.set("contactParticipantId", remainingMembers[0].participantId);
+      }
       await registration.save();
       await releaseEventFromParticipantIfUnused(member.participantId, registration.eventSlug, registration._id);
 
