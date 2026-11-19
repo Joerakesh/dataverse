@@ -116,6 +116,10 @@ export async function createOrFindParticipant(input: {
             return { error: "This mobile number is already linked to a different email address. Please use the registered email or contact the organisers." } as const;
           }
           if (!duplicate.email) {
+            const emailOwner = await Participant.findOne({ email }).select("_id").lean();
+            if (emailOwner && emailOwner._id.toString() !== duplicate._id.toString()) {
+              return { error: "This email address is already linked to another participant. Please use your own email address." } as const;
+            }
             duplicate.email = email;
             await duplicate.save();
           }
