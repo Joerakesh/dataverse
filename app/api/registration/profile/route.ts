@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createOrFindParticipant, createRegistrationFlow, getFlowParticipant, normalizeIndianMobile } from "@/src/lib/public-registration";
-export const runtime = "nodejs";
 const schema = z.object({
   name: z.string().trim().min(2).max(100),
   mobile: z.string().trim().min(10).max(20),

@@ -6,7 +6,6 @@ import RegistrationOtp from "@/models/RegistrationOtp";
 import { getPublicRegistrationStatus, normalizeIndianMobile } from "@/src/lib/public-registration";
 import { hashRegistrationOtp } from "@/src/lib/sms";
 
-export const runtime = "nodejs";
 const schema = z.object({
   mobile: z.string().trim().min(10).max(20),
   otp: z.string().regex(/^\d{6}$/),

@@ -6,7 +6,6 @@ import Participant from "@/models/Participant";
 import { getPublicRegistrationStatus, normalizeIndianMobile } from "@/src/lib/public-registration";
 import { hashRegistrationOtp, hashRegistrationRequestIp, sendRegistrationOtp } from "@/src/lib/sms";
 
-export const runtime = "nodejs";
 const schema = z.object({ mobile: z.string().trim().min(10).max(20) });
 
 export async function POST(request: Request) {

@@ -13,8 +13,6 @@ import {
   normalizeKey,
 } from "@/src/lib/public-registration";
 
-export const runtime = "nodejs";
-
 const schema = z.object({
   eventSlug: z.string().trim().min(2).max(80),
   members: z.array(z.object({

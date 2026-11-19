@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { SYMPOSIUM_EVENTS } from "@/src/data/events";
 import { getPublicRegistrationStatus } from "@/src/lib/public-registration";
-export const runtime = "nodejs";
 export async function GET() {
   try {
     const status = await getPublicRegistrationStatus();
