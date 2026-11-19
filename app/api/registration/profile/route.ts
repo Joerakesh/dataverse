@@ -1,6 +1,7 @@
 import { connection, NextResponse } from "next/server";
 import { z } from "zod";
 import EventRegistration from "@/models/EventRegistration";
+import Participant from "@/models/Participant";
 import {
   createOrFindParticipant,
   createRegistrationFlow,
@@ -8,11 +9,13 @@ import {
   getPublicRegistrationStatus,
   normalizeIndianMobile,
   normalizeKey,
+  normalizeRegistrationEmail,
 } from "@/src/lib/public-registration";
 
 const schema = z.object({
   name: z.string().trim().min(2).max(100),
   mobile: z.string().trim().min(10).max(20),
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
   college: z.string().trim().min(2).max(180),
   city: z.string().trim().min(2).max(100),
   department: z.string().trim().min(2).max(120),
@@ -20,6 +23,7 @@ const schema = z.object({
 
 const editSchema = z.object({
   name: z.string().trim().min(2).max(100),
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
   college: z.string().trim().min(2).max(180),
   city: z.string().trim().min(2).max(100),
   department: z.string().trim().min(2).max(120),
@@ -28,6 +32,7 @@ const editSchema = z.object({
 function publicParticipant(participant: {
   name: string;
   mobile: string;
+  email?: string | null;
   college: string;
   city: string;
   department: string;
@@ -35,6 +40,7 @@ function publicParticipant(participant: {
   return {
     name: participant.name,
     mobile: participant.mobile,
+    email: participant.email ?? "",
     college: participant.college,
     city: participant.city,
     department: participant.department,
@@ -65,17 +71,19 @@ export async function POST(request: Request) {
 
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) {
-      return NextResponse.json({ success: false, message: "Please check all your details.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Please check all your details, including your email address.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
     let mobile: string;
+    let email: string;
     try {
       mobile = normalizeIndianMobile(parsed.data.mobile);
+      email = normalizeRegistrationEmail(parsed.data.email);
     } catch (error) {
-      return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Invalid mobile number." }, { status: 400 });
+      return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Invalid participant contact details." }, { status: 400 });
     }
 
-    const result = await createOrFindParticipant({ ...parsed.data, mobile });
+    const result = await createOrFindParticipant({ ...parsed.data, mobile, email });
     if ("error" in result) {
       return NextResponse.json({ success: false, message: result.error }, { status: 409 });
     }
@@ -104,7 +112,19 @@ export async function PUT(request: Request) {
 
     const parsed = editSchema.safeParse(await request.json());
     if (!parsed.success) {
-      return NextResponse.json({ success: false, message: "Please check all your profile details.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Please check all your profile details, including your email address.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
+    }
+
+    const email = normalizeRegistrationEmail(parsed.data.email);
+    if (participant.email && participant.email !== email) {
+      return NextResponse.json({ success: false, message: "Your registered email cannot be changed here. Contact the organisers if it needs correction." }, { status: 409 });
+    }
+    if (!participant.email) {
+      const emailOwner = await Participant.findOne({ email }).select("_id").lean();
+      if (emailOwner && emailOwner._id.toString() !== participant._id.toString()) {
+        return NextResponse.json({ success: false, message: "This email address is already linked to another participant." }, { status: 409 });
+      }
+      participant.email = email;
     }
 
     const hasEventRegistrations = (participant.eventSlugs?.length ?? 0) > 0;
@@ -130,10 +150,9 @@ export async function PUT(request: Request) {
     }
     await participant.save();
 
-    // Keep the saved team-member names in sync with the participant profile.
     await EventRegistration.updateMany(
       { "members.participantId": participant._id },
-      { $set: { "members.$[member].name": participant.name } },
+      { $set: { "members.$[member].name": participant.name, "members.$[member].email": participant.email } },
       { arrayFilters: [{ "member.participantId": participant._id }] },
     );
 
