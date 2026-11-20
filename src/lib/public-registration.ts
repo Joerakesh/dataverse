@@ -27,6 +27,14 @@ export function normalizeIndianMobile(value: string) {
   return mobile;
 }
 
+export function normalizeRegisterNumber(value: string) {
+  const registerNumber = value.trim().replace(/\\s+/g, " ").toUpperCase();
+  if (registerNumber.length > 60 || !/^[A-Z0-9][A-Z0-9./ -]*$/.test(registerNumber)) {
+    throw new Error("Enter a valid college register number.");
+  }
+  return registerNumber;
+}
+
 export function normalizeRegistrationEmail(value: string) {
   const email = value.trim().toLowerCase();
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
