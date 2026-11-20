@@ -160,7 +160,7 @@ export async function PUT(request: Request) {
       participant.department = parsed.data.department;
       participant.departmentKey = normalizeKey(parsed.data.department);
     }
-    if (!participant.registerNumber) {
+    if (!hasEventRegistrations || !participant.registerNumber) {
       const rollOwner = await Participant.findOne({ collegeKey: participant.collegeKey, registerNumber }).select("_id").lean();
       if (rollOwner && rollOwner._id.toString() !== participant._id.toString()) {
         return NextResponse.json({ success: false, message: "This college register number is already linked to another participant." }, { status: 409 });
