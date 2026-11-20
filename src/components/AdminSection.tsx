@@ -77,12 +77,9 @@ export default function AdminSection({ admin, section }: { admin: AdminInfo; sec
         setUsers(data.users ?? []);
         setPagination(data.pagination);
       } else if (section === "coordinators") {
-        const [coordinatorData, eventData] = await Promise.all([
-          readJson(await fetch("/api/admin/coordinators", { cache: "no-store", credentials: "include" })),
-          readJson(await fetch("/api/admin/events", { cache: "no-store", credentials: "include" })),
-        ]);
-        setCoordinators(coordinatorData.coordinators ?? []);
-        setEvents(eventData.events ?? []);
+        const data = await readJson(await fetch("/api/admin/coordinators", { cache: "no-store", credentials: "include" }));
+        setCoordinators(data.coordinators ?? []);
+        setEvents(data.events ?? []);
       } else {
         const data = await readJson(await fetch("/api/admin/conversations?page=" + page + "&limit=30", { cache: "no-store", credentials: "include" }));
         setConversations(data.conversations ?? []);
