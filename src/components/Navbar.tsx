@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Menu, X, Volume2, VolumeX, Download } from "lucide-react";
 import { sounds } from "@/src/utils/soundEffects";
