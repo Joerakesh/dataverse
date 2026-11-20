@@ -25,7 +25,7 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#04070a]/95 backdrop-blur-md border-b border-emerald-500/25">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#04070a]/80 backdrop-blur-xl border-b border-emerald-500/20 shadow-[0_8px_32px_rgba(0,0,0,.22)]">
       <div className="bg-gradient-to-r from-emerald-950 via-slate-950 to-emerald-950 border-b border-emerald-500/20 py-1 px-4 text-center text-[10px] sm:text-xs font-tech font-bold uppercase tracking-widest text-emerald-300 flex items-center justify-center gap-2 sm:gap-4 overflow-x-auto whitespace-nowrap">
         <span>LOYOLA COLLEGE (AUTONOMOUS), CHENNAI</span>
         <span className="text-emerald-500">•</span>
@@ -36,7 +36,7 @@ export default function Navbar() {
         <span className="text-emerald-400">04.12.2026 @ CENTENARY BUILDING</span>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <Link href="/" onClick={() => sounds.playHover()} className="flex items-center gap-3 sm:gap-4 group">
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <div className="w-9 h-9 rounded-full overflow-hidden border border-emerald-400/50 p-0.5 bg-black/60 shadow-[0_0_10px_rgba(0,255,136,0.3)]">
