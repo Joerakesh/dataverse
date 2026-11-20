@@ -23,7 +23,7 @@ const AdminSchema = new Schema(
       enum: ["superadmin", "organizer", "event_manager"],
       default: "organizer",
     },
-    assignedEventIds: [{ type: Schema.Types.ObjectId, ref: "Event", default: [] }],
+    assignedEventIds: { type: [{ type: Schema.Types.ObjectId, ref: "Event" }], default: [] },
     permissions: [
       {
         type: String,
