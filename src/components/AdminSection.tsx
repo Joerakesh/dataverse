@@ -13,6 +13,7 @@ type UserItem = { id: string; personId: string; name: string; email: string; mob
 type CoordinatorItem = { _id: string; name: string; email: string; isActive: boolean; assignedEventIds: ({ _id: string; name: string; slug: string } | string)[] };
 type ConversationItem = { id: string; conversationId: string; participant: { name: string; email: string; mobile: string; college: string; registerNumber: string } | null; messageCount: number; preview: string; updatedAt: string };
 type MessageItem = { id: string; role: "assistant" | "user"; text: string };
+type Pagination = { page: number; limit: number; total: number; totalPages: number };
 
 const SECTION_LABELS: Record<Section, string> = {
   events: "Events",
@@ -42,6 +43,9 @@ export default function AdminSection({ admin, section }: { admin: AdminInfo; sec
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<{ participant: ConversationItem["participant"]; messages: MessageItem[] } | null>(null);
   const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 30, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -63,13 +67,15 @@ export default function AdminSection({ admin, section }: { admin: AdminInfo; sec
         const data = await readJson(await fetch("/api/admin/events", { cache: "no-store", credentials: "include" }));
         setEvents(data.events ?? []);
       } else if (section === "registrations") {
-        const params = new URLSearchParams({ page: "1", limit: "100", search });
+        const params = new URLSearchParams({ page: String(page), limit: "100", search: query });
         const data = await readJson(await fetch("/api/admin/registrations?" + params, { cache: "no-store", credentials: "include" }));
         setRegistrations(data.registrations ?? []);
+        setPagination(data.pagination);
       } else if (section === "users") {
         const params = new URLSearchParams({ page: "1", limit: "100", search });
         const data = await readJson(await fetch("/api/admin/users?" + params, { cache: "no-store", credentials: "include" }));
         setUsers(data.users ?? []);
+        setPagination(data.pagination);
       } else if (section === "coordinators") {
         const [coordinatorData, eventData] = await Promise.all([
           readJson(await fetch("/api/admin/coordinators", { cache: "no-store", credentials: "include" })),
@@ -78,8 +84,9 @@ export default function AdminSection({ admin, section }: { admin: AdminInfo; sec
         setCoordinators(coordinatorData.coordinators ?? []);
         setEvents(eventData.events ?? []);
       } else {
-        const data = await readJson(await fetch("/api/admin/conversations?page=1&limit=30", { cache: "no-store", credentials: "include" }));
+        const data = await readJson(await fetch("/api/admin/conversations?page=" + page + "&limit=30", { cache: "no-store", credentials: "include" }));
         setConversations(data.conversations ?? []);
+        setPagination(data.pagination);
       }
     } catch (caught) {
       if (caught instanceof Error && caught.message === "SESSION_EXPIRED") {
@@ -90,8 +97,9 @@ export default function AdminSection({ admin, section }: { admin: AdminInfo; sec
     } finally {
       setLoading(false);
     }
-  }, [section, search, router]);
+  }, [section, query, page, router]);
 
+  useEffect(() => { setPage(1); setQuery(""); setSearch(""); }, [section]);
   useEffect(() => { void load(); }, [load]);
 
   const toggleEvent = async (event: EventItem) => {
@@ -200,8 +208,8 @@ export default function AdminSection({ admin, section }: { admin: AdminInfo; sec
         {!loading && section === "registrations" && (
           <section className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              <div className="relative min-w-[220px] flex-1"><Search size={15} className="absolute left-3 top-3 text-slate-500"/><input value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void load(); }} placeholder="Search event, college, team, roll number…" className="w-full rounded-lg border border-slate-800 bg-[#091116] py-2.5 pl-9 pr-3 text-xs font-tech text-slate-100 outline-none focus:border-emerald-500"/></div>
-              <button type="button" onClick={() => void load()} className="rounded-lg border border-emerald-500/30 px-4 py-2.5 text-xs font-tech font-bold uppercase text-emerald-300">Search</button>
+              <div className="relative min-w-[220px] flex-1"><Search size={15} className="absolute left-3 top-3 text-slate-500"/><input value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { setPage(1); setQuery(search); } }} placeholder="Search event, college, team, roll number…" className="w-full rounded-lg border border-slate-800 bg-[#091116] py-2.5 pl-9 pr-3 text-xs font-tech text-slate-100 outline-none focus:border-emerald-500"/></div>
+              <button type="button" onClick={() => { setPage(1); setQuery(search); }} className="rounded-lg border border-emerald-500/30 px-4 py-2.5 text-xs font-tech font-bold uppercase text-emerald-300">Search</button>
             </div>
             <div className="overflow-x-auto rounded-xl border border-slate-800 bg-[#091116]">
               <table className="w-full min-w-[920px] text-left">
@@ -287,6 +295,15 @@ export default function AdminSection({ admin, section }: { admin: AdminInfo; sec
               </> : <div className="grid h-full min-h-72 place-items-center text-center text-xs font-tech text-slate-500"><div><MessageSquare size={25} className="mx-auto mb-2 text-slate-600"/>Select a conversation to read its messages.</div></div>}
             </div>
           </section>
+        )}
+        {!loading && (section === "registrations" || section === "users" || section === "conversations") && (
+          <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-[#091116] px-4 py-3">
+            <span className="text-[10px] font-tech text-slate-500">Page {pagination.page} of {pagination.totalPages} · {pagination.total.toLocaleString("en-IN")} records</span>
+            <div className="flex items-center gap-2">
+              <button type="button" disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="rounded-lg border border-slate-700 px-3 py-2 text-[10px] font-tech uppercase text-slate-300 disabled:opacity-30">Previous</button>
+              <button type="button" disabled={page >= pagination.totalPages} onClick={() => setPage((value) => Math.min(pagination.totalPages, value + 1))} className="rounded-lg border border-slate-700 px-3 py-2 text-[10px] font-tech uppercase text-slate-300 disabled:opacity-30">Next</button>
+            </div>
+          </div>
         )}
         <footer className="flex items-center justify-between border-t border-slate-800 pt-4 text-[10px] font-tech text-slate-600"><span>DATAVERSE 2K26 · STAFF CONSOLE</span><span className="inline-flex items-center gap-1"><CalendarDays size={12}/> Secure, role-based access</span></footer>
       </div>
