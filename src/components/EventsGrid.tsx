@@ -1,16 +1,25 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { SYMPOSIUM_EVENTS, SymposiumEvent } from "@/src/data/events";
 import { CheckCircle2, ChevronRight, Phone, Sparkles, Users, X } from "lucide-react";
 import { sounds } from "@/src/utils/soundEffects";
-import EventTransition from "@/src/components/EventTransition";
+import EventTransition, { preloadEventTransition } from "@/src/components/EventTransition";
 
 export default function EventsGrid() {
   const [activeTab, setActiveTab] = useState("All");
   const [selectedEvent, setSelectedEvent] = useState<SymposiumEvent | null>(null);
   const [transitionEvent, setTransitionEvent] = useState<SymposiumEvent | null>(null);
+
+  const [transitionOrigin, setTransitionOrigin] = useState<{ x: number; y: number } | undefined>();
+
+  // Warm up the three.js chunk so the first transition doesn't wait on the network.
+  useEffect(() => {
+    const id = window.setTimeout(preloadEventTransition, 1500);
+    return () => window.clearTimeout(id);
+  }, []);
 
   const completeTransition = useCallback(() => {
     if (transitionEvent) setSelectedEvent(transitionEvent);
@@ -71,7 +80,7 @@ export default function EventsGrid() {
                   </div>
                 </div>
                 <div className="pt-4 border-t border-slate-800">
-                  <button onClick={() => { sounds.playClick(); setTransitionEvent(event); }} className="w-full py-2.5 px-3 rounded-lg bg-slate-900 border border-emerald-500/30 text-emerald-300 font-tech font-bold text-xs uppercase tracking-wider hover:bg-emerald-950/40 hover:border-emerald-400 transition-all text-center flex items-center justify-center gap-1">
+                  <button onClick={(e) => { sounds.playClick(); setTransitionOrigin({ x: e.clientX, y: e.clientY }); setTransitionEvent(event); }} className="w-full py-2.5 px-3 rounded-lg bg-slate-900 border border-emerald-500/30 text-emerald-300 font-tech font-bold text-xs uppercase tracking-wider hover:bg-emerald-950/40 hover:border-emerald-400 transition-all text-center flex items-center justify-center gap-1">
                     <span>RULES & ROUNDS</span><ChevronRight size={14}/>
                   </button>
                 </div>
@@ -81,7 +90,11 @@ export default function EventsGrid() {
         </div>
       </div>
 
-      {transitionEvent && <EventTransition event={transitionEvent} onComplete={completeTransition} />}
+      <AnimatePresence>
+        {transitionEvent && (
+          <EventTransition key={transitionEvent.id} event={transitionEvent} origin={transitionOrigin} onComplete={completeTransition} />
+        )}
+      </AnimatePresence>
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
