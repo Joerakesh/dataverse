@@ -9,6 +9,17 @@ import { sounds } from "@/src/utils/soundEffects";
 export default function EventsGrid() {
   const [activeTab, setActiveTab] = useState("All");
   const [selectedEvent, setSelectedEvent] = useState<SymposiumEvent | null>(null);
+  const [openingEvent, setOpeningEvent] = useState<SymposiumEvent | null>(null);
+
+  const handleOpenEvent = (event: SymposiumEvent) => {
+    sounds.playClick();
+    setOpeningEvent(event);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.setTimeout(() => {
+      setSelectedEvent(event);
+      setOpeningEvent(null);
+    }, reducedMotion ? 80 : 680);
+  };
 
   const filteredEvents = SYMPOSIUM_EVENTS.filter((event) => {
     if (activeTab === "All") return true;
@@ -39,7 +50,7 @@ export default function EventsGrid() {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
           {filteredEvents.map((event) => (
             <article key={event.slug} className="group relative flex flex-col overflow-hidden rounded-2xl border border-emerald-400/15 bg-[#07100c]/90 shadow-[0_18px_50px_rgba(0,0,0,.28)] transition-[border-color,transform,box-shadow] duration-300 hover:-translate-y-1 hover:border-emerald-300/50 hover:shadow-[0_22px_60px_rgba(0,255,136,.12)]">
-              <div className="relative h-60 w-full overflow-hidden bg-slate-950 sm:h-64">
+              <div className="relative h-72 w-full overflow-hidden bg-slate-950 sm:h-80">
                 <Image src={event.character.image} alt={event.character.alias} fill className="object-cover object-center brightness-[.88] contrast-[1.08] transition-transform duration-700 ease-out group-hover:scale-[1.06] motion-reduce:transform-none"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#05080c] via-[#05080c]/35 to-transparent"/>
                 <div className="absolute top-4 left-4">
@@ -64,8 +75,8 @@ export default function EventsGrid() {
                   </div>
                 </div>
                 <div className="pt-4 border-t border-slate-800">
-                  <button onClick={() => { sounds.playClick(); setSelectedEvent(event); }} className="w-full py-2.5 px-3 rounded-lg bg-slate-900 border border-emerald-500/30 text-emerald-300 font-tech font-bold text-xs uppercase tracking-wider hover:bg-emerald-950/40 hover:border-emerald-400 transition-all text-center flex items-center justify-center gap-1">
-                    <span>RULES & ROUNDS</span><ChevronRight size={14}/>
+                  <button onClick={() => handleOpenEvent(event)} className="w-full py-2.5 px-3 rounded-lg bg-slate-900 border border-emerald-500/30 text-emerald-300 font-tech font-bold text-xs uppercase tracking-wider hover:bg-emerald-950/40 hover:border-emerald-400 transition-all text-center flex items-center justify-center gap-1">
+                    <span>ENTER EVENT INTEL</span><ChevronRight size={14}/>
                   </button>
                 </div>
               </div>
@@ -73,6 +84,21 @@ export default function EventsGrid() {
           ))}
         </div>
       </div>
+
+      {openingEvent && (
+        <div className="event-reveal fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-[#020508]" role="status" aria-label={`Entering ${openingEvent.name}`}>
+          <Image src={openingEvent.character.image} alt="" fill priority sizes="100vw" className="object-cover object-center opacity-45" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,136,.18),transparent_52%),linear-gradient(180deg,rgba(2,5,8,.25),#020508)]" />
+          <div className="event-reveal-frame absolute inset-5 rounded-2xl border border-emerald-300/35 sm:inset-10" />
+          <div className="relative z-10 mx-auto flex max-w-xl flex-col items-center px-6 text-center">
+            <div className="mb-5 rounded-full border border-emerald-300/35 bg-black/55 px-4 py-1.5 font-tech text-[10px] font-bold uppercase tracking-[.32em] text-emerald-200">Multiverse access granted</div>
+            <p className="font-tech text-xs uppercase tracking-[.35em] text-emerald-300">{openingEvent.character.alias} · {openingEvent.category}</p>
+            <h2 className="mt-3 font-avengers text-5xl italic tracking-[.08em] text-white drop-shadow-[0_0_24px_rgba(0,255,136,.35)] sm:text-7xl">{openingEvent.name}</h2>
+            <p className="mt-3 font-tech text-sm text-slate-300">{openingEvent.tagline}</p>
+            <div className="mt-8 h-px w-40 bg-gradient-to-r from-transparent via-emerald-300 to-transparent" />
+          </div>
+        </div>
+      )}
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
