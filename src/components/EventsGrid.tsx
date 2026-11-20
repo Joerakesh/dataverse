@@ -18,14 +18,14 @@ export default function EventsGrid() {
   });
 
   return (
-    <section id="events" className="py-24 relative bg-[#05080c] overflow-hidden">
-      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[160px] pointer-events-none"/>
+    <section id="events" className="relative overflow-hidden border-y border-emerald-400/10 bg-[#04070a]/85 py-20 sm:py-28">
+      <div className="pointer-events-none absolute -left-40 top-1/4 h-[520px] w-[520px] rounded-full bg-emerald-400/[0.08] blur-[150px]"/>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="mx-auto mb-14 max-w-4xl text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-emerald-950/70 border border-emerald-500/30 text-emerald-400 text-xs font-tech font-bold uppercase tracking-widest mb-3">
             <Sparkles size={14}/><span>8 official events</span>
           </div>
-          <h2 className="font-avengers text-5xl sm:text-7xl text-avengers-chrome italic tracking-wider">CHOOSE YOUR TRIAL</h2>
+          <h2 className="font-avengers text-5xl italic tracking-[0.08em] text-avengers-chrome sm:text-7xl">CHOOSE YOUR TRIAL</h2>
           <p className="font-tech text-base sm:text-lg text-slate-400 mt-2">Explore the DATAVERSE 2K26 events and read the rules before registering through the chatbot.</p>
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mt-8">
             {["All", "Technical", "Non-Technical"].map((tab) => (
@@ -36,12 +36,12 @@ export default function EventsGrid() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
           {filteredEvents.map((event) => (
-            <article key={event.slug} className="doom-card rounded-2xl overflow-hidden flex flex-col group relative border border-emerald-500/25 hover:border-emerald-400 hover:shadow-[0_0_30px_rgba(0,255,136,0.22)] transition-all duration-300">
-              <div className="relative h-64 w-full overflow-hidden bg-slate-950">
-                <Image src={event.character.image} alt={event.character.alias} fill className="object-cover object-center group-hover:scale-105 transition-transform duration-500 brightness-90 contrast-105"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-[#05080c] via-slate-950/40 to-transparent"/>
+            <article key={event.slug} className="group relative flex flex-col overflow-hidden rounded-2xl border border-emerald-400/15 bg-[#07100c]/90 shadow-[0_18px_50px_rgba(0,0,0,.28)] transition-[border-color,transform,box-shadow] duration-300 hover:-translate-y-1 hover:border-emerald-300/50 hover:shadow-[0_22px_60px_rgba(0,255,136,.12)]">
+              <div className="relative h-60 w-full overflow-hidden bg-slate-950 sm:h-64">
+                <Image src={event.character.image} alt={event.character.alias} fill className="object-cover object-center brightness-[.88] contrast-[1.08] transition-transform duration-700 ease-out group-hover:scale-[1.06] motion-reduce:transform-none"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#05080c] via-[#05080c]/35 to-transparent"/>
                 <div className="absolute top-4 left-4">
                   <span className="px-3 py-1 rounded bg-black/80 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-tech font-bold uppercase tracking-wider">{event.character.alias}</span>
                 </div>
