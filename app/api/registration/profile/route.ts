@@ -10,6 +10,7 @@ import {
   normalizeIndianMobile,
   normalizeKey,
   normalizeRegistrationEmail,
+  normalizeRegisterNumber,
 } from "@/src/lib/public-registration";
 
 const schema = z.object({
@@ -19,6 +20,7 @@ const schema = z.object({
   college: z.string().trim().min(2).max(180),
   city: z.string().trim().min(2).max(100),
   department: z.string().trim().min(2).max(120),
+  registerNumber: z.string().trim().min(1).max(60),
 });
 
 const editSchema = z.object({
@@ -36,6 +38,7 @@ function publicParticipant(participant: {
   college: string;
   city: string;
   department: string;
+  registerNumber?: string;
 }) {
   return {
     name: participant.name,
@@ -44,6 +47,7 @@ function publicParticipant(participant: {
     college: participant.college,
     city: participant.city,
     department: participant.department,
+    registerNumber: participant.registerNumber ?? "",
   };
 }
 
@@ -116,6 +120,9 @@ export async function PUT(request: Request) {
     }
 
     const email = normalizeRegistrationEmail(parsed.data.email);
+    let registerNumber: string;
+    try { registerNumber = normalizeRegisterNumber(parsed.data.registerNumber); }
+    catch (error) { return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Enter a valid college register number." }, { status: 400 }); }
     if (participant.email && participant.email !== email) {
       return NextResponse.json({ success: false, message: "Your registered email cannot be changed here. Contact the organisers if it needs correction." }, { status: 409 });
     }
@@ -147,6 +154,7 @@ export async function PUT(request: Request) {
       participant.city = parsed.data.city;
       participant.department = parsed.data.department;
       participant.departmentKey = normalizeKey(parsed.data.department);
+      participant.registerNumber = registerNumber;
     }
     await participant.save();
 
