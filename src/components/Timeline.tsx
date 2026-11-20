@@ -1,4 +1,3 @@
-import React from "react";
 import { CalendarDays, Clock3, MapPin, Flag, Trophy } from "lucide-react";
 const phases=[
  {label:"REPORTING",time:"09:00 AM onwards",title:"Arrival & Registration Desk",description:"Report to the registration desk at Centenary Building and collect your participation card before attending your event.",icon:<Flag className="text-emerald-400" size={18}/>},
