@@ -10,7 +10,7 @@ const schema = z.object({
     id: z.string().min(1).max(80),
     role: z.enum(["assistant", "user"]),
     text: z.string().trim().min(1).max(4000),
-  })).min(1).max(200),
+  })).min(1).max(500),
 });
 
 export async function POST(request: Request) {
