@@ -1,13 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { ArrowUpRight, CalendarDays, MapPin, Volume2, VolumeX } from "lucide-react";
-import Link from "next/link";
-import { sounds } from "@/src/utils/soundEffects";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, CalendarDays, MapPin, RotateCcw } from "lucide-react";
 
 export default function Hero() {
   const [timeLeft, setTimeLeft] = useState({ days: "00", hours: "00", minutes: "00", seconds: "00" });
-  const [audioOn, setAudioOn] = useState(false);
 
   useEffect(() => {
     const target = new Date("2026-12-04T09:00:00+05:30").getTime();
@@ -25,11 +22,7 @@ export default function Hero() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const toggleAudio = () => {
-    sounds.enabled = !audioOn;
-    setAudioOn(!audioOn);
-    if (!audioOn) sounds.playClick();
-  };
+  const replayIntro = () => window.dispatchEvent(new Event("dataverse:replay-intro"));
 
   return (
     <section className="relative isolate flex min-h-[calc(100svh-4.5rem)] items-center overflow-hidden border-b border-white/10 bg-[#050806]">
@@ -56,8 +49,8 @@ export default function Hero() {
             <a href="#events" className="inline-flex items-center gap-2 rounded-xl bg-[#00ff66] px-6 py-3.5 text-sm font-bold tracking-wide text-[#050806] shadow-[0_0_28px_rgba(0,255,102,.25)] transition hover:-translate-y-0.5 hover:bg-emerald-300">
               EXPLORE 8 EVENTS <ArrowUpRight size={17}/>
             </a>
-            <button type="button" onClick={toggleAudio} className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/[.04] px-5 py-3.5 text-sm text-slate-200 transition hover:border-emerald-400/60 hover:text-emerald-300">
-              {audioOn ? <Volume2 size={16}/> : <VolumeX size={16}/>} {audioOn ? "Sound On" : "Sound Off"}
+            <button type="button" onClick={replayIntro} className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/[.04] px-5 py-3.5 text-sm text-slate-200 transition hover:border-emerald-400/60 hover:text-emerald-300">
+              <RotateCcw size={16}/> REPLAY ENTRY
             </button>
           </div>
           <div className="mt-10 max-w-md border-t border-white/15 pt-6">
