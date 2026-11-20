@@ -292,12 +292,13 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
   };
 
   const downloadCsv = () => {
-    const columns = ["Registration reference", "Event", "College", "City", "Department", "Team size", "Status", "Registered at", "Members", "Member emails", "Registration contact email"];
+    const columns = ["Registration reference", "Event", "College", "City", "Department", "Team size", "Status", "Registered at", "Members", "Member register numbers", "Member emails", "Registration contact email"];
     const escape = (value: string) => '"' + value.replace(/"/g, '""') + '"';
     const rows = registrations.map((item) => [
       item.reference, item.eventName, item.college, item.city, item.department,
       String(item.teamSize), item.status, new Date(item.createdAt).toISOString(),
       item.members.map((member) => member.name + " (" + member.mobile + ")").join("; "),
+      item.members.map((member) => member.registerNumber ?? "").join("; "),
       item.members.map((member) => member.email).filter(Boolean).join("; "),
       item.contact?.email ?? "",
     ]);
