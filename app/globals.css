@@ -177,3 +177,34 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Cinematic multiverse event reveal */
+.event-reveal {
+  isolation: isolate;
+  animation: event-reveal-in 680ms cubic-bezier(.16, 1, .3, 1) both;
+}
+.event-reveal > img {
+  animation: event-image-in 900ms cubic-bezier(.16, 1, .3, 1) both;
+}
+.event-reveal-frame {
+  box-shadow: inset 0 0 80px rgba(0,255,136,.06), 0 0 50px rgba(0,255,136,.08);
+  animation: event-frame-in 680ms ease-out both;
+}
+@keyframes event-reveal-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes event-image-in {
+  from { transform: scale(1.08); filter: blur(8px); }
+  to { transform: scale(1); filter: blur(0); }
+}
+@keyframes event-frame-in {
+  from { opacity: 0; transform: scale(.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .event-reveal, .event-reveal > img, .event-reveal-frame {
+    animation: none !important;
+  }
+}
