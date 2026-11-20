@@ -21,7 +21,7 @@ export default function DoomsdayPreloader({ onComplete }: DoomsdayPreloaderProps
   const [isExiting, setIsExiting] = useState(false);
   const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
-  const exitTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const exitTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
