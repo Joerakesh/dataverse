@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RefreshCw, LogOut, Search, LoaderCircle, Users, MessageSquare, CalendarDays, ClipboardList, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, RefreshCw, LogOut, Search, LoaderCircle, Users, MessageSquare, CalendarDays, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 type Section = "events" | "registrations" | "users" | "coordinators" | "conversations";
 type AdminInfo = { name: string; email: string; role: string; permissions: string[] };
@@ -72,7 +72,7 @@ export default function AdminSection({ admin, section }: { admin: AdminInfo; sec
         setRegistrations(data.registrations ?? []);
         setPagination(data.pagination);
       } else if (section === "users") {
-        const params = new URLSearchParams({ page: "1", limit: "100", search });
+        const params = new URLSearchParams({ page: String(page), limit: "100", search: query });
         const data = await readJson(await fetch("/api/admin/users?" + params, { cache: "no-store", credentials: "include" }));
         setUsers(data.users ?? []);
         setPagination(data.pagination);
