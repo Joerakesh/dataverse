@@ -177,3 +177,80 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Cinematic multiverse event reveal */
+.event-reveal {
+  isolation: isolate;
+  animation: event-reveal-in 680ms cubic-bezier(.16, 1, .3, 1) both;
+}
+.event-reveal > img {
+  animation: event-image-in 900ms cubic-bezier(.16, 1, .3, 1) both;
+}
+.event-reveal-frame {
+  box-shadow: inset 0 0 80px rgba(0,255,136,.06), 0 0 50px rgba(0,255,136,.08);
+  animation: event-frame-in 680ms ease-out both;
+}
+@keyframes event-reveal-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes event-image-in {
+  from { transform: scale(1.08); filter: blur(8px); }
+  to { transform: scale(1); filter: blur(0); }
+}
+@keyframes event-frame-in {
+  from { opacity: 0; transform: scale(.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .event-reveal, .event-reveal > img, .event-reveal-frame {
+    animation: none !important;
+  }
+}
+
+
+/* Reference-inspired character-specific event portal transitions */
+.event-reveal { isolation:isolate; animation:event-reveal-in 180ms ease-out both; }
+.event-reveal > img { animation:event-character-arrive 1.15s cubic-bezier(.16,1,.3,1) both; }
+.event-reveal-frame { box-shadow:inset 0 0 90px rgba(0,255,136,.06),0 0 55px rgba(0,255,136,.08); animation:event-frame-arrive .7s ease-out both; }
+.event-vfx { opacity:.75; background:radial-gradient(circle at 50% 52%,rgba(0,255,136,.14),transparent 30%); }
+.event-energy-ring { position:absolute; left:50%; top:50%; width:min(38vw,18rem); aspect-ratio:1; border:1px solid rgba(110,255,180,.75); border-radius:50%; transform:translate(-50%,-50%) scale(.1); box-shadow:0 0 30px rgba(0,255,136,.22),inset 0 0 24px rgba(0,255,136,.12); animation:event-ring-burst 1.05s cubic-bezier(.16,1,.3,1) both; }
+.event-energy-ring-two { animation-delay:100ms; border-color:rgba(210,255,230,.5); }
+.event-reveal-iron-man .event-energy-ring { border:2px solid rgba(255,164,56,.85); box-shadow:0 0 45px rgba(255,116,24,.35),inset 0 0 30px rgba(255,180,70,.18); }
+.event-reveal-captain-america .event-energy-ring { border:8px double rgba(220,235,255,.7); box-shadow:inset 0 0 0 18px rgba(30,85,180,.16),0 0 35px rgba(80,140,255,.35); }
+.event-reveal-the-hulk { animation:event-reveal-in 150ms ease-out both,event-hulk-shock .55s ease-out 250ms both; }
+.event-reveal-doctor-strange .event-energy-ring { border:2px dashed rgba(255,173,70,.9); animation:event-ring-burst 1.05s ease-out both,event-mandala-spin 5s linear infinite; }
+.event-reveal-spider-man .event-vfx { background:repeating-conic-gradient(from 0deg at 50% 50%,transparent 0deg 14deg,rgba(210,240,255,.25) 14.2deg 14.6deg,transparent 14.8deg 30deg); mask-image:radial-gradient(circle,transparent 0 12%,black 70%); }
+.event-reveal-god-of-mischief .event-vfx { background:radial-gradient(ellipse at 50% 55%,rgba(70,255,120,.28),transparent 38%),conic-gradient(from 0deg at 50% 50%,transparent,rgba(0,255,136,.15),transparent,rgba(0,255,136,.12),transparent); animation:event-mandala-spin 8s linear infinite; }
+.event-reveal-rocket .event-vfx { background:radial-gradient(circle at 50% 50%,rgba(255,170,80,.2),transparent 35%); }
+@keyframes event-reveal-in { from{opacity:0}to{opacity:1} }
+@keyframes event-character-arrive { from{transform:scale(1.13);filter:blur(10px) brightness(.5)}to{transform:scale(1);filter:blur(0) brightness(1)} }
+@keyframes event-frame-arrive { from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)} }
+@keyframes event-ring-burst { 0%{opacity:0;transform:translate(-50%,-50%) scale(.08)} 24%{opacity:1} 100%{opacity:0;transform:translate(-50%,-50%) scale(3.2)} }
+@keyframes event-mandala-spin { to{rotate:360deg} }
+@keyframes event-hulk-shock { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+@media(max-width:640px){.event-energy-ring{width:min(58vw,15rem)}.event-reveal-frame{inset:12px}}
+@media(prefers-reduced-motion:reduce){.event-reveal,.event-reveal>img,.event-reveal-frame,.event-energy-ring,.event-vfx{animation:none!important}}
+
+/* Reference typography and viewport-safe layout */
+.reference-metallic-title,
+.metallic-title {
+  background: linear-gradient(180deg,#f3f7f5 0%,#c4d1cc 38%,#8e9b97 54%,#586661 78%,#b5c4be 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 22px rgba(0,255,102,.3)) drop-shadow(0 5px 16px rgba(0,0,0,.8));
+}
+html { scroll-padding-top: 5rem; }
+body { overflow-x: clip; }
+img,video,canvas,svg { max-width:100%; }
+#events,#schedule,#venue { scroll-margin-top:5.5rem; }
+@media(max-width:380px){
+  .reference-metallic-title { letter-spacing:.12em!important; }
+}
+@media(prefers-reduced-motion:reduce){
+  html { scroll-behavior:auto; }
+  .event-reveal,.event-reveal>img,.event-reveal-frame,.event-energy-ring,.event-vfx { animation:none!important; }
+}

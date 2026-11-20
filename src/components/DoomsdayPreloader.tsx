@@ -1,364 +1,161 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Zap, Terminal } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { sounds } from "@/src/utils/soundEffects";
 
-interface DoomsdayPreloaderProps {
-  onComplete: () => void;
-}
+interface Props { onComplete: () => void }
 
-export default function DoomsdayPreloader({ onComplete }: DoomsdayPreloaderProps) {
-  const [statusIndex, setStatusIndex] = useState(0);
-  const [isExiting, setIsExiting] = useState(false);
+const STATUS = "04 DECEMBER 2026 · CENTENARY BUILDING";
+
+export default function DoomsdayPreloader({ onComplete }: Props) {
+  const [exiting, setExiting] = useState(false);
+  const reduced = useReducedMotion();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const finished = useRef(false);
+  const timers = useRef<number[]>([]);
 
-  const statuses = [
-    "SYNCHRONIZING LOYOLA CITADEL MAINFRAME...",
-    "SAGE NEURAL MESH INITIALIZING...",
-    "DOOMSDAY ARC REACTOR GENERATING CRITICAL PLASMA...",
-    "QUANTUM PARTICLES REACHING SUPER-CONDUCTIVITY...",
-    "DR. DOOM DECREES: DATAVERSE 2K26 ASSEMBLE.",
-  ];
+  const finish = useCallback(() => {
+    if (finished.current) return;
+    finished.current = true;
+    setExiting(true);
+    timers.current.push(window.setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "instant" });
+      onComplete();
+    }, reduced ? 0 : 420));
+  }, [onComplete, reduced]);
 
-  // Keep the landing page stationary while the intro is visible.
   useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    const initialScrollY = window.scrollY;
+    const oldOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.scrollTo(0, 0);
-
     return () => {
-      document.body.style.overflow = previousOverflow;
-      window.scrollTo(0, initialScrollY);
+      document.body.style.overflow = oldOverflow;
+      timers.current.forEach((timer) => window.clearTimeout(timer));
     };
   }, []);
 
-  // Lightweight procedural smoke and lightning for the intro.
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (reduced) return;
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let animId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
-
-    const handleResize = () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    let raf = 0;
+    let width = 0, height = 0, dpr = 1, last = 0;
+    const particles = Array.from({ length: window.innerWidth < 640 ? 14 : 26 }, () => ({
+      x: Math.random(), y: Math.random(), r: 24 + Math.random() * 74,
+      vx: (Math.random() - .5) * .0008, vy: -.0003 - Math.random() * .0007,
+      a: .05 + Math.random() * .12,
+    }));
+    const resize = () => {
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      width = window.innerWidth; height = window.innerHeight;
+      canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+      canvas.style.width = width + "px"; canvas.style.height = height + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
-    window.addEventListener("resize", handleResize);
-
-    // Smoke particles
-    const smokeParticles: {
-      x: number;
-      y: number;
-      radius: number;
-      vx: number;
-      vy: number;
-      alpha: number;
-      maxAlpha: number;
-      growth: number;
-    }[] = [];
-
-    for (let i = 0; i < 18; i++) {
-      smokeParticles.push({
-        x: width / 2 + (Math.random() - 0.5) * 160,
-        y: height / 2 + (Math.random() - 0.5) * 160,
-        radius: 35 + Math.random() * 55,
-        vx: (Math.random() - 0.5) * 0.9,
-        vy: -0.6 - Math.random() * 0.8,
-        alpha: 0,
-        maxAlpha: 0.18 + Math.random() * 0.15,
-        growth: 0.35 + Math.random() * 0.4,
-      });
-    }
-
-    // Helper: Draw electric lightning bolts branching outward
-    const drawLightning = (x1: number, y1: number, x2: number, y2: number, branches: number) => {
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-
-      let curX = x1;
-      let curY = y1;
-      const steps = 7;
-      const dx = (x2 - x1) / steps;
-      const dy = (y2 - y1) / steps;
-
-      for (let s = 1; s < steps; s++) {
-        curX += dx + (Math.random() - 0.5) * 20;
-        curY += dy + (Math.random() - 0.5) * 20;
-        ctx.lineTo(curX, curY);
-
-        if (branches > 0 && Math.random() < 0.35) {
-          const bx = curX + (Math.random() - 0.5) * 35;
-          const by = curY + (Math.random() - 0.5) * 35;
-          ctx.moveTo(curX, curY);
-          ctx.lineTo(bx, by);
-          ctx.moveTo(curX, curY);
-        }
+    const draw = (time: number) => {
+      if (time - last < 32) { raf = requestAnimationFrame(draw); return; }
+      last = time; ctx.clearRect(0, 0, width, height);
+      for (const p of particles) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.y < -.15) { p.y = 1.1; p.x = Math.random(); }
+        if (p.x < -.1 || p.x > 1.1) p.vx *= -1;
+        const x = p.x * width, y = p.y * height, radius = p.r * (width < 640 ? .75 : 1);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+        g.addColorStop(0, "rgba(0,255,136," + p.a + ")");
+        g.addColorStop(.55, "rgba(4,120,87," + (p.a * .45) + ")");
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
       }
-
-      ctx.lineTo(x2, y2);
-      ctx.strokeStyle = Math.random() > 0.3 ? "#00ff88" : "#ffffff";
-      ctx.lineWidth = 1 + Math.random() * 1.8;
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = "#00ff88";
-      ctx.stroke();
+      raf = requestAnimationFrame(draw);
     };
+    resize(); window.addEventListener("resize", resize, { passive: true });
+    raf = requestAnimationFrame(draw);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, [reduced]);
 
-    let tick = 0;
-    let lastFrame = 0;
-
-    const render = (timestamp: number) => {
-      if (timestamp - lastFrame < 33) {
-        animId = requestAnimationFrame(render);
-        return;
-      }
-      lastFrame = timestamp;
-      ctx.clearRect(0, 0, width, height);
-      tick++;
-
-      // 1. Render Billowing Smokey Clouds
-      smokeParticles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.radius += p.growth;
-
-        if (p.alpha < p.maxAlpha) {
-          p.alpha += 0.006;
-        } else {
-          p.alpha -= 0.0035;
-        }
-
-        if (p.alpha <= 0 || p.radius > 240) {
-          p.x = width / 2 + (Math.random() - 0.5) * 140;
-          p.y = height / 2 + 60 + (Math.random() - 0.5) * 40;
-          p.radius = 30 + Math.random() * 45;
-          p.alpha = 0;
-          p.vy = -0.5 - Math.random() * 0.8;
-        }
-
-        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
-        gradient.addColorStop(0, `rgba(0, 255, 136, ${p.alpha * 1.2})`);
-        gradient.addColorStop(0.4, `rgba(4, 120, 87, ${p.alpha * 0.7})`);
-        gradient.addColorStop(1, "transparent");
-
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // 2. Render Electrical Lightning Arcs Around Reactor
-      if (tick % 4 === 0) {
-        const reactorRadius = Math.min(width, height) * 0.18;
-        const angle = Math.random() * Math.PI * 2;
-        const startX = width / 2 + Math.cos(angle) * (reactorRadius * 0.4);
-        const startY = height / 2 + Math.sin(angle) * (reactorRadius * 0.4);
-        const endAngle = angle + (Math.random() - 0.5) * 1.5;
-        const endX = width / 2 + Math.cos(endAngle) * (reactorRadius * 1.15);
-        const endY = height / 2 + Math.sin(endAngle) * (reactorRadius * 1.15);
-
-        drawLightning(startX, startY, endX, endY, 1);
-      }
-
-      animId = requestAnimationFrame(render);
-    };
-
-    render(performance.now());
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      cancelAnimationFrame(animId);
-    };
-  }, []);
-
-  // Sequence status messages and complete automatically
   useEffect(() => {
     sounds.playDoomsdaySurge();
-
-    const statusInterval = setInterval(() => {
-      setStatusIndex((prev) => {
-        if (prev < statuses.length - 1) return prev + 1;
-        return prev;
-      });
-    }, 850);
-
-    const completionTimer = setTimeout(() => {
-      setIsExiting(true);
-      window.setTimeout(() => {
-        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-        window.scrollTo(0, 0);
-        onComplete();
-      }, 450);
-    }, 2400);
-
-    return () => {
-      clearInterval(statusInterval);
-      clearTimeout(completionTimer);
-    };
-  }, [onComplete, statuses.length]);
+    if (reduced) { timers.current.push(window.setTimeout(finish, 700)); return; }
+    timers.current.push(window.setTimeout(finish, 1550));
+  }, [finish, reduced]);
 
   return (
-    <div
-      className={`fixed inset-0 z-[100] bg-[#020508] flex flex-col items-center justify-center p-6 select-none transition-opacity duration-500 ${
-        isExiting ? "opacity-0 scale-105 pointer-events-none" : "opacity-100 scale-100"
-      }`}
-    >
-      {/* Real-time Smokey Canvas & Lightning Arcs */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 pointer-events-none z-0"
-      />
-
-      {/* Background Doomsday Plasma Glow */}
-      <div className="absolute w-[680px] h-[680px] rounded-full bg-emerald-500/15 blur-[160px] pointer-events-none animate-pulse" />
-
-      {/* Main Preloader Content */}
-      <div className="relative z-10 flex flex-col items-center max-w-xl w-full text-center">
-        
-        {/* Top Institutional Crests: Loyola & SAGE */}
-        <div className="flex items-center justify-center gap-6 sm:gap-10 mb-4 animate-in fade-in duration-500">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full overflow-hidden border border-emerald-400/50 p-1 bg-black/70 shadow-[0_0_20px_rgba(0,255,136,0.35)]">
-              <img
-                src="/images/loyola-crest.png"
-                alt="Loyola College"
-                className="w-full h-full object-contain filter contrast-125"
-              />
-            </div>
-            <div className="text-left">
-              <span className="font-avengers text-sm sm:text-base text-slate-100 tracking-wider block leading-tight">
-                LOYOLA COLLEGE
-              </span>
-              <span className="text-[9px] font-tech uppercase text-emerald-400 tracking-widest block font-bold">
-                Autonomous • Chennai
-              </span>
-            </div>
-          </div>
-
-          <div className="w-px h-8 bg-emerald-500/40" />
-
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full overflow-hidden border border-emerald-400/50 p-1 bg-black/70 shadow-[0_0_20px_rgba(0,255,136,0.35)]">
-              <img
-                src="/images/sage-logo.png"
-                alt="SAGE"
-                className="w-full h-full object-contain filter contrast-125"
-              />
-            </div>
-            <div className="text-left">
-              <span className="font-avengers text-sm sm:text-base text-emerald-300 tracking-wider block leading-tight">
-                SAGE
-              </span>
-              <span className="text-[9px] font-tech uppercase text-slate-400 tracking-widest block font-bold">
-                Dept. of Data Science
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* ========================================================
-            DOOMSDAY ARC REACTOR (Pure CSS/SVG Kinetic FX)
-           ======================================================== */}
-        <div className="relative w-72 h-72 sm:w-80 sm:h-80 my-4 flex items-center justify-center group cursor-pointer"
-             onClick={() => {
-               sounds.playClick();
-               setIsExiting(true);
-               window.setTimeout(() => {
-              if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-              window.scrollTo(0, 0);
-              onComplete();
-            }, 250);
-             }}>
-          
-          {/* Radial Emerald Plasma Burst Behind Reactor */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-emerald-500/20 via-green-400/30 to-emerald-500/20 blur-xl animate-pulse" />
-
-          {/* Outer Rotating Steel Ring with Energy Notches */}
-          <div className="absolute inset-0 rounded-full border-4 border-slate-700 bg-gradient-to-br from-slate-900 via-black to-[#02130b] shadow-[0_0_60px_rgba(0,255,136,0.5),inset_0_0_40px_rgba(0,255,136,0.3)] flex items-center justify-center">
-            
-            {/* 10 Electromagnetic Copper Coils (ArchitJ6 Arc Reactor Architecture) */}
-            <div className="absolute inset-2 rounded-full border border-emerald-500/40 animate-reactor-reverse">
-              {[0, 36, 72, 108, 144, 180, 216, 252, 288, 324].map((angle, idx) => (
-                <div
-                  key={idx}
-                  className="absolute w-4 h-7 bg-gradient-to-b from-amber-600 via-yellow-600 to-amber-900 border-2 border-emerald-400 rounded-sm shadow-[0_0_12px_rgba(0,255,136,0.9)] -translate-x-1/2 -translate-y-1/2"
-                  style={{
-                    left: `${50 + 44 * Math.cos((angle * Math.PI) / 180)}%`,
-                    top: `${50 + 44 * Math.sin((angle * Math.PI) / 180)}%`,
-                    transform: `translate(-50%, -50%) rotate(${angle + 90}deg)`,
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Rotating Gear / Concentric Segmented Ring */}
-            <div className="absolute w-56 h-56 sm:w-64 sm:h-64 rounded-full border-2 border-dashed border-emerald-400/90 animate-reactor-spin shadow-[0_0_25px_rgba(0,255,136,0.7)]" />
-
-            {/* Counter-Rotating High-Voltage Segment Ring */}
-            <div className="absolute w-44 h-44 sm:w-48 sm:h-48 rounded-full border-4 border-t-emerald-300 border-r-emerald-500 border-b-transparent border-l-emerald-400 animate-reactor-reverse shadow-[inset_0_0_30px_rgba(0,255,136,0.7)]" />
-
-            {/* Center Pulsing Doomsday Core with Latverian Sigil */}
-            <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-r from-emerald-400 via-green-200 to-emerald-500 border-4 border-white animate-reactor-pulse flex items-center justify-center shadow-[0_0_70px_rgba(0,255,136,1),inset_0_0_35px_rgba(255,255,255,0.9)]">
-              
-              {/* Inner Glowing Core */}
-              <div className="w-16 h-16 rounded-full border-2 border-emerald-950 bg-black/60 flex items-center justify-center shadow-[inset_0_0_20px_#00ff88]">
-                <Zap size={26} className="text-white filter drop-shadow-[0_0_12px_#00ff88] animate-bounce" />
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* 3D DATAVERSE 2K26 Logo */}
-        <div className="relative mt-2 mb-3 w-full max-w-sm flex flex-col items-center">
-          <img
-            src="/images/logo.png"
-            alt="DATAVERSE"
-            className="w-full h-auto max-h-16 object-contain filter drop-shadow-[0_0_25px_rgba(0,255,136,0.7)] animate-pulse"
-          />
-          <span className="font-avengers text-2xl tracking-[0.25em] text-emerald-400 italic -mt-1">
-            2K26
-          </span>
-        </div>
-
-        {/* Cinematic Status Readout (No Loading Bar!) */}
-        <div className="flex items-center justify-center gap-2 mb-4 text-xs font-tech text-emerald-400 font-bold tracking-widest uppercase">
-          <Terminal size={15} className="animate-pulse text-emerald-300 flex-shrink-0" />
-          <span className="truncate max-w-[320px] sm:max-w-md">
-            {statuses[statusIndex]}
-          </span>
-        </div>
-
-        {/* Skip button for quick access */}
-        <button
-          onClick={() => {
-            sounds.playClick();
-            setIsExiting(true);
-            window.setTimeout(() => {
-              if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-              window.scrollTo(0, 0);
-              onComplete();
-            }, 250);
-          }}
-          className="text-[11px] font-tech uppercase tracking-[0.25em] text-slate-500 hover:text-emerald-400 transition-colors border-b border-transparent hover:border-emerald-400 py-0.5"
+    <AnimatePresence>
+      {!exiting && (
+        <motion.div
+          key="dataverse-entry"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0, scale: 1.025, transition: { duration: .42, ease: [.16, 1, .3, 1] } }}
+          className="fixed inset-0 z-[200] flex min-h-[100dvh] w-full items-center justify-center overflow-hidden bg-[#050806] px-4 py-[max(1rem,env(safe-area-inset-top))] text-white"
+          role="status" aria-label="Loading Dataverse"
         >
-          [ ENTER CITADEL ]
-        </button>
+          <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_52%,rgba(0,255,102,.16),transparent_43%),linear-gradient(180deg,rgba(0,0,0,.2),#050806)]" />
+          <motion.div initial={{ scaleY: 0, opacity: 0 }} animate={{ scaleY: [0, 1, .4], opacity: [0, .85, 0] }} transition={{ duration: .9, ease: "easeOut" }} style={{ transformOrigin: "top center" }} className="pointer-events-none absolute left-1/2 top-0 h-[55vh] w-24 -translate-x-1/2 bg-gradient-to-b from-emerald-300/40 via-emerald-500/10 to-transparent blur-2xl" />
+          <div className="pointer-events-none absolute inset-4 rounded-xl border border-emerald-400/20 sm:inset-7" />
+          <div className="pointer-events-none absolute left-5 top-5 h-9 w-9 border-l-2 border-t-2 border-emerald-400/60 sm:left-8 sm:top-8 sm:h-12 sm:w-12" />
+          <div className="pointer-events-none absolute right-5 top-5 h-9 w-9 border-r-2 border-t-2 border-emerald-400/60 sm:right-8 sm:top-8 sm:h-12 sm:w-12" />
+          <div className="pointer-events-none absolute bottom-5 left-5 h-9 w-9 border-b-2 border-l-2 border-emerald-400/60 sm:bottom-8 sm:left-8 sm:h-12 sm:w-12" />
+          <div className="pointer-events-none absolute bottom-5 right-5 h-9 w-9 border-b-2 border-r-2 border-emerald-400/60 sm:bottom-8 sm:right-8 sm:h-12 sm:w-12" />
 
-      </div>
+          <div className="relative z-10 flex w-full max-w-xl flex-col items-center text-center">
+            <motion.div
+              initial={{ opacity: 0, y: -18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: .5 }}
+              className="mb-2 flex items-center justify-center gap-3 sm:gap-7"
+            >
+              <div className="flex items-center gap-2">
+                <img src="/images/loyola-crest.png" alt="Loyola College" className="h-9 w-9 rounded-full border border-emerald-400/40 bg-black/60 p-1 object-contain sm:h-12 sm:w-12" />
+                <div className="text-left"><span className="block text-[10px] font-bold tracking-wider sm:text-xs">LOYOLA COLLEGE</span><span className="block text-[8px] uppercase tracking-widest text-emerald-400 sm:text-[9px]">Autonomous · Chennai</span></div>
+              </div>
+              <span className="h-7 w-px bg-emerald-500/40" />
+              <div className="flex items-center gap-2">
+                <img src="/images/sage-logo.png" alt="SAGE" className="h-9 w-9 rounded-full border border-emerald-400/40 bg-black/60 p-1 object-contain sm:h-12 sm:w-12" />
+                <div className="text-left"><span className="block text-xs font-bold tracking-wider text-emerald-200">SAGE</span><span className="block text-[8px] uppercase tracking-widest text-slate-400 sm:text-[9px]">Data Science</span></div>
+              </div>
+            </motion.div>
 
-      {/* Cybernetic Corner Borders */}
-      <div className="absolute top-6 left-6 w-12 h-12 border-t-2 border-l-2 border-emerald-500/40" />
-      <div className="absolute top-6 right-6 w-12 h-12 border-t-2 border-r-2 border-emerald-500/40" />
-      <div className="absolute bottom-6 left-6 w-12 h-12 border-b-2 border-l-2 border-emerald-500/40" />
-      <div className="absolute bottom-6 right-6 w-12 h-12 border-b-2 border-r-2 border-emerald-500/40" />
-    </div>
+            <div className="relative my-3 flex aspect-square w-[min(66vw,18rem)] items-center justify-center sm:my-5 sm:w-80">
+              <motion.div
+                initial={{ scale: .15, opacity: 0 }}
+                animate={{ scale: [0.15, 2.35, 3.1], opacity: [0, .8, 0] }}
+                transition={{ duration: 1.25, delay: .62, ease: [.16, 1, .3, 1] }}
+                className="absolute h-28 w-28 rounded-full border-2 border-emerald-300 shadow-[0_0_55px_rgba(0,255,102,.75)]"
+              />
+              <motion.div
+                initial={{ scale: .1, opacity: 0 }}
+                animate={{ scale: [0.1, 3.7], opacity: [0, .5, 0] }}
+                transition={{ duration: 1.45, delay: .72, ease: [.16, 1, .3, 1] }}
+                className="absolute h-28 w-28 rounded-full border border-emerald-500/80"
+              />
+              <motion.div
+                initial={{ y: "-58vh", scale: .52, opacity: .25 }}
+                animate={{ y: ["-58vh", "1.5vh", "0vh"], scale: [.52, 1.08, 1], opacity: [.25, 1, 1] }}
+                transition={{ duration: .95, times: [0, .78, 1], ease: [.22, 1, .36, 1] }}
+                className="relative z-10 h-[min(52vw,15rem)] w-[min(38vw,11rem)] overflow-hidden rounded-xl border border-emerald-300/50 shadow-[0_0_55px_rgba(0,255,102,.35)] sm:h-64 sm:w-44"
+              >
+                <img src="/images/characters/doom.jpg" alt="Doctor Doom" className="h-full w-full object-cover object-top" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050806] via-transparent to-black/10" />
+              </motion.div>
+              <motion.div
+                initial={{ scaleX: 0, opacity: 0 }}
+                animate={{ scaleX: [0, 1.2, 1.7], opacity: [0, .9, 0] }}
+                transition={{ duration: .8, delay: .72, ease: "easeOut" }}
+                className="absolute bottom-[13%] h-px w-[min(78vw,25rem)] bg-gradient-to-r from-transparent via-emerald-200 to-transparent shadow-[0_0_16px_#00ff66]"
+              />
+            </div>
+
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .9, duration: .55 }} className="relative z-20 flex w-full flex-col items-center">
+              <p className="reference-metallic-title font-doom text-3xl font-extrabold tracking-[.22em] sm:text-4xl">DATAVERSE</p>
+              <p className="mt-2 font-mono text-[10px] tracking-[.3em] text-emerald-300 sm:text-xs">{STATUS}</p>
+              <button type="button" onClick={() => { sounds.playClick(); finish(); }} className="mt-5 rounded-full border border-emerald-400/35 bg-black/40 px-5 py-2 text-[9px] font-bold tracking-[.25em] text-slate-400 transition-colors hover:border-emerald-300 hover:text-emerald-200 sm:text-[10px]">[ ENTER THE MULTIVERSE ]</button>
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

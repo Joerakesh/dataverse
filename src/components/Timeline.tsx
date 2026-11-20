@@ -1,57 +1,7 @@
-import React from "react";
-import { CalendarDays, Clock, Flag, Trophy } from "lucide-react";
-
-const phases = [
-  {
-    label: "REPORTING",
-    time: "09:00 AM onwards",
-    title: "Arrival & Registration Desk",
-    description: "Report to the registration desk at Centenary Building and collect your participation card before attending your event.",
-    icon: <Flag className="text-emerald-400" size={20}/>,
-  },
-  {
-    label: "EVENT SESSIONS",
-    time: "Event-wise schedule",
-    title: "Competitions & Rounds",
-    description: "Attend the rounds for your registered event. Report to the respective venue on time; event-specific schedules will be communicated by the organisers.",
-    icon: <Clock className="text-cyan-400" size={20}/>,
-  },
-  {
-    label: "CLOSING",
-    time: "As announced",
-    title: "Valedictory & Prize Distribution",
-    description: "The announcement of results and prize distribution will take place during the Valedictory Function.",
-    icon: <Trophy className="text-amber-400" size={20}/>,
-  },
+import { CalendarDays, Clock3, MapPin, Flag, Trophy } from "lucide-react";
+const phases=[
+ {label:"REPORTING",time:"09:00 AM onwards",title:"Arrival & Registration Desk",description:"Report to the registration desk at Centenary Building and collect your participation card before attending your event.",icon:<Flag className="text-emerald-400" size={18}/>},
+ {label:"EVENT SESSIONS",time:"Event-wise schedule",title:"Competitions & Rounds",description:"Attend the rounds for your registered event. Report to the respective venue on time; detailed event slots will be communicated by the organisers.",icon:<Clock3 className="text-emerald-400" size={18}/>},
+ {label:"CLOSING",time:"As announced",title:"Valedictory & Prize Distribution",description:"Results and prize distribution will take place during the Valedictory Function.",icon:<Trophy className="text-emerald-400" size={18}/>},
 ];
-
-export default function Timeline() {
-  return (
-    <section id="schedule" className="py-24 relative bg-[#05080c] overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-emerald-950/70 border border-emerald-500/30 text-emerald-400 text-xs font-tech font-bold uppercase tracking-widest mb-3">
-            <CalendarDays size={14}/><span>Event day</span>
-          </div>
-          <h2 className="font-avengers text-5xl sm:text-7xl text-avengers-chrome italic tracking-wider">DATAVERSE TIMELINE</h2>
-          <p className="font-tech text-base sm:text-lg text-slate-400 mt-2">The published information for 4 December 2026. Detailed event slots will be announced by the organising team.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {phases.map((phase, index) => (
-            <article key={phase.label} className="doom-card rounded-xl p-6 border border-emerald-500/25 relative group hover:border-emerald-400 transition-all">
-              <div className="flex items-center justify-between mb-5">
-                <span className="text-[11px] font-tech font-bold uppercase tracking-widest px-2.5 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/40">PHASE 0{index + 1}</span>
-                <div className="p-2 rounded-lg bg-slate-900 border border-slate-800">{phase.icon}</div>
-              </div>
-              <span className="font-tech text-xs text-emerald-300 block mb-1">{phase.time}</span>
-              <h3 className="font-avengers text-2xl text-slate-100 tracking-wide mb-2 group-hover:text-emerald-400 transition-colors">{phase.title}</h3>
-              <p className="font-tech text-xs text-slate-300 leading-relaxed">{phase.description}</p>
-              <div className="mt-5 pt-3 border-t border-slate-800/80 text-[10px] font-tech text-slate-500 uppercase tracking-wider">{phase.label}</div>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+export default function Timeline(){return <section id="schedule" className="relative overflow-hidden border-t border-white/10 bg-[#050806]/90 py-16 sm:py-24"><div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 px-5 sm:px-8 lg:grid-cols-12 lg:gap-14"><div className="lg:col-span-5"><p className="font-mono text-[10px] font-bold uppercase tracking-[.24em] text-emerald-400">04 DECEMBER 2026</p><h2 className="mt-3 font-doom text-3xl font-bold text-white sm:text-4xl">Day Schedule & Venue</h2><p className="mt-4 max-w-md text-sm leading-7 text-[#A8B5B0]">The symposium takes place at Loyola College, Chennai. Check in at the registration desk and follow the event-wise announcements from the organisers.</p><div id="venue" className="mt-8 space-y-5"><div className="flex items-start gap-3"><CalendarDays size={17} className="mt-0.5 shrink-0 text-emerald-400"/><div><p className="text-sm font-semibold text-white">04 December 2026</p><p className="mt-1 text-xs text-slate-400">09:00 AM onwards</p></div></div><div className="flex items-start gap-3"><MapPin size={17} className="mt-0.5 shrink-0 text-emerald-400"/><div><p className="text-sm font-semibold text-white">Centenary Building</p><p className="mt-1 text-xs text-slate-400">Loyola College (Autonomous), Chennai</p></div></div></div></div><div className="lg:col-span-7 divide-y divide-white/10 border-y border-white/10">{phases.map((phase,i)=><article key={phase.label} className="flex gap-4 py-5 sm:gap-6"><div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-emerald-400/20 bg-emerald-950/30">{phase.icon}</div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-x-3 gap-y-1"><span className="font-mono text-[9px] font-bold tracking-[.18em] text-emerald-400">0{i+1} · {phase.label}</span><span className="text-[11px] text-slate-500">{phase.time}</span></div><h3 className="mt-2 text-base font-semibold text-white">{phase.title}</h3><p className="mt-1 max-w-xl text-xs leading-6 text-slate-400">{phase.description}</p></div></article>)}</div></div></section>}
