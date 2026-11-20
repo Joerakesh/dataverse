@@ -232,3 +232,25 @@ body {
 @keyframes event-hulk-shock { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
 @media(max-width:640px){.event-energy-ring{width:min(58vw,15rem)}.event-reveal-frame{inset:12px}}
 @media(prefers-reduced-motion:reduce){.event-reveal,.event-reveal>img,.event-reveal-frame,.event-energy-ring,.event-vfx{animation:none!important}}
+
+/* Reference typography and viewport-safe layout */
+.reference-metallic-title,
+.metallic-title {
+  background: linear-gradient(180deg,#f3f7f5 0%,#c4d1cc 38%,#8e9b97 54%,#586661 78%,#b5c4be 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 22px rgba(0,255,102,.3)) drop-shadow(0 5px 16px rgba(0,0,0,.8));
+}
+html { scroll-padding-top: 5rem; }
+body { overflow-x: clip; }
+img,video,canvas,svg { max-width:100%; }
+#events,#schedule,#venue { scroll-margin-top:5.5rem; }
+@media(max-width:380px){
+  .reference-metallic-title { letter-spacing:.12em!important; }
+}
+@media(prefers-reduced-motion:reduce){
+  html { scroll-behavior:auto; }
+  .event-reveal,.event-reveal>img,.event-reveal-frame,.event-energy-ring,.event-vfx { animation:none!important; }
+}
