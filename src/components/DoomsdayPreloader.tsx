@@ -169,7 +169,7 @@ export default function DoomsdayPreloader({ onComplete }: DoomsdayPreloaderProps
       animId = requestAnimationFrame(render);
     };
 
-    render();
+    render(performance.now());
 
     return () => {
       window.removeEventListener("resize", handleResize);
