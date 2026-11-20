@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Activity, CalendarClock, CheckCircle2, ChevronLeft, ChevronRight,
   CircleAlert, ClipboardList, Download, LoaderCircle, LogOut,
@@ -23,7 +24,7 @@ type EventItem = {
   teamSize: string;
   registrationOpen: boolean;
 };
-type Member = { id: string; name: string; mobile: string; email: string };
+type Member = { id: string; name: string; mobile: string; email: string; registerNumber?: string };
 type Registration = {
   id: string;
   reference: string;
@@ -81,6 +82,9 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
   const canManageEvents = hasPermission("events:manage");
   const canViewRegistrations = hasPermission("registrations:view");
   const canManageRegistrations = hasPermission("registrations:manage");
+  const canManageUsers = hasPermission("users:view");
+  const canManageCoordinators = hasPermission("coordinators:manage");
+  const canViewConversations = hasPermission("conversations:view");
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -340,6 +344,13 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
         </div>
       </header>
 
+      <nav className="mx-auto flex max-w-7xl flex-wrap gap-2 px-4 pt-4 sm:px-6">
+        {canManageEvents && <Link href="/admin/manage/events" className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400 hover:border-emerald-500/40 hover:text-emerald-300">Events</Link>}
+        {canViewRegistrations && <Link href="/admin/manage/registrations" className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400 hover:border-emerald-500/40 hover:text-emerald-300">Registrations</Link>}
+        {canManageUsers && <Link href="/admin/manage/users" className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400 hover:border-emerald-500/40 hover:text-emerald-300">Users</Link>}
+        {canManageCoordinators && <Link href="/admin/manage/coordinators" className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400 hover:border-emerald-500/40 hover:text-emerald-300">Coordinators</Link>}
+        {canViewConversations && <Link href="/admin/manage/conversations" className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400 hover:border-emerald-500/40 hover:text-emerald-300">Conversations</Link>}
+      </nav>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-7">
         {error && <div role="alert" className="rounded-xl border border-red-500/30 bg-red-950/30 px-4 py-3 text-sm font-tech text-red-300 flex gap-2"><CircleAlert size={17} className="shrink-0"/>{error}</div>}
         {notice && <div role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-sm font-tech text-emerald-200 flex items-center gap-2"><CheckCircle2 size={17}/>{notice}</div>}
@@ -481,7 +492,7 @@ export default function AdminDashboard({ admin }: { admin: AdminInfo }) {
                               <div className="text-xs font-tech text-slate-200">{item.college}</div>
                               <div className="text-[10px] font-tech text-slate-500">{item.department}</div>
                             </td>
-                            <td className="px-4 py-3 text-xs font-tech text-slate-300">{item.members.map((member) => member.name).join(", ")}</td>
+                            <td className="px-4 py-3 text-xs font-tech text-slate-300">{item.members.map((member) => member.name + " (" + (member.registerNumber || "Roll no. pending") + ")").join(", ")}</td>
                             <td className="px-4 py-3 text-[10px] font-tech text-slate-400">{new Date(item.createdAt).toLocaleString("en-IN")}</td>
                             <td className="px-4 py-3"><span className={"rounded-full px-2.5 py-1 text-[9px] font-tech font-bold uppercase " + (item.status === "confirmed" ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-700/50 text-slate-400")}>{item.status}</span></td>
                             <td className="px-4 py-3"><button type="button" onClick={() => setExpanded((value) => value === item.id ? "" : item.id)} className="text-[10px] font-tech font-bold uppercase text-emerald-300 hover:text-emerald-200">{expanded === item.id ? "Hide" : "Details"}</button></td>
