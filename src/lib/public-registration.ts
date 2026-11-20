@@ -27,6 +27,14 @@ export function normalizeIndianMobile(value: string) {
   return mobile;
 }
 
+export function normalizeRegisterNumber(value: string) {
+  const registerNumber = value.trim().replace(/\s+/g, " ").toUpperCase();
+  if (registerNumber.length > 60 || !/^[A-Z0-9][A-Z0-9./ -]*$/.test(registerNumber)) {
+    throw new Error("Enter a valid college register number.");
+  }
+  return registerNumber;
+}
+
 export function normalizeRegistrationEmail(value: string) {
   const email = value.trim().toLowerCase();
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -54,13 +62,21 @@ export async function createOrFindParticipant(input: {
   college: string;
   city: string;
   department: string;
+  registerNumber: string;
 }) {
   await connectDB();
   const mobile = normalizeIndianMobile(input.mobile);
   const email = normalizeRegistrationEmail(input.email);
   const collegeKey = normalizeKey(input.college);
   const departmentKey = normalizeKey(input.department);
-  const existing = await Participant.findOne({ mobile });
+  const registerNumber = normalizeRegisterNumber(input.registerNumber);
+  const [existing, rollNumberOwner] = await Promise.all([
+    Participant.findOne({ mobile }),
+    Participant.findOne({ collegeKey, registerNumber }).select("_id").lean(),
+  ]);
+  if (rollNumberOwner && (!existing || rollNumberOwner._id.toString() !== existing._id.toString())) {
+    return { error: "This college register number is already linked to another participant." } as const;
+  }
 
   if (existing) {
     if (normalizeKey(existing.name) !== normalizeKey(input.name)) {
@@ -72,14 +88,23 @@ export async function createOrFindParticipant(input: {
     if (existing.email && existing.email !== email) {
       return { error: "This mobile number is already linked to a different email address. Please use the registered email or contact the organisers." } as const;
     }
+    if (existing.registerNumber && existing.registerNumber !== registerNumber) {
+      return { error: "This mobile number is already linked to a different college register number. Please contact the organisers if it needs correction." } as const;
+    }
+    let changed = false;
     if (!existing.email) {
       const emailOwner = await Participant.findOne({ email }).select("_id").lean();
       if (emailOwner && emailOwner._id.toString() !== existing._id.toString()) {
         return { error: "This email address is already linked to another participant. Please use your own email address." } as const;
       }
       existing.email = email;
-      await existing.save();
+      changed = true;
     }
+    if (!existing.registerNumber) {
+      existing.registerNumber = registerNumber;
+      changed = true;
+    }
+    if (changed) await existing.save();
     return { participant: existing } as const;
   }
 
@@ -100,6 +125,7 @@ export async function createOrFindParticipant(input: {
         city: input.city.trim(),
         department: input.department.trim(),
         departmentKey,
+        registerNumber,
         eventSlugs: [],
       });
       return { participant } as const;
@@ -115,14 +141,23 @@ export async function createOrFindParticipant(input: {
           if (duplicate.email && duplicate.email !== email) {
             return { error: "This mobile number is already linked to a different email address. Please use the registered email or contact the organisers." } as const;
           }
+          if (duplicate.registerNumber && duplicate.registerNumber !== registerNumber) {
+            return { error: "This mobile number is already linked to a different college register number." } as const;
+          }
+          let changed = false;
           if (!duplicate.email) {
             const emailOwner = await Participant.findOne({ email }).select("_id").lean();
             if (emailOwner && emailOwner._id.toString() !== duplicate._id.toString()) {
               return { error: "This email address is already linked to another participant. Please use your own email address." } as const;
             }
             duplicate.email = email;
-            await duplicate.save();
+            changed = true;
           }
+          if (!duplicate.registerNumber) {
+            duplicate.registerNumber = registerNumber;
+            changed = true;
+          }
+          if (changed) await duplicate.save();
           return { participant: duplicate } as const;
         }
         const emailDuplicate = await Participant.findOne({ email }).select("_id").lean();

@@ -4,6 +4,7 @@ const RegistrationMemberSchema = new Schema({
   name: { type: String, required: true, trim: true },
   mobile: { type: String, required: true },
   email: { type: String, required: true, trim: true, lowercase: true },
+  registerNumber: { type: String, required: true, trim: true, uppercase: true, maxlength: 60 },
 }, { _id: false });
 const EventRegistrationSchema = new Schema({
   registrationReference: { type: String, required: true, unique: true, index: true },

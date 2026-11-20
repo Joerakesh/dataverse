@@ -10,6 +10,7 @@ import {
   normalizeIndianMobile,
   normalizeKey,
   normalizeRegistrationEmail,
+  normalizeRegisterNumber,
 } from "@/src/lib/public-registration";
 
 const schema = z.object({
@@ -19,6 +20,7 @@ const schema = z.object({
   college: z.string().trim().min(2).max(180),
   city: z.string().trim().min(2).max(100),
   department: z.string().trim().min(2).max(120),
+  registerNumber: z.string().trim().min(1).max(60),
 });
 
 const editSchema = z.object({
@@ -27,6 +29,7 @@ const editSchema = z.object({
   college: z.string().trim().min(2).max(180),
   city: z.string().trim().min(2).max(100),
   department: z.string().trim().min(2).max(120),
+  registerNumber: z.string().trim().min(1).max(60),
 });
 
 function publicParticipant(participant: {
@@ -36,6 +39,7 @@ function publicParticipant(participant: {
   college: string;
   city: string;
   department: string;
+  registerNumber?: string;
 }) {
   return {
     name: participant.name,
@@ -44,6 +48,7 @@ function publicParticipant(participant: {
     college: participant.college,
     city: participant.city,
     department: participant.department,
+    registerNumber: participant.registerNumber ?? "",
   };
 }
 
@@ -71,7 +76,7 @@ export async function POST(request: Request) {
 
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) {
-      return NextResponse.json({ success: false, message: "Please check all your details, including your email address.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Please check all your details, including your college register number and email address.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
     let mobile: string;
@@ -83,11 +88,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Invalid participant contact details." }, { status: 400 });
     }
 
-    const result = await createOrFindParticipant({ ...parsed.data, mobile, email });
+    let registerNumber: string;
+    try { registerNumber = normalizeRegisterNumber(parsed.data.registerNumber); }
+    catch (error) { return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Enter a valid college register number." }, { status: 400 }); }
+    const result = await createOrFindParticipant({ ...parsed.data, registerNumber, mobile, email });
     if ("error" in result) {
       return NextResponse.json({ success: false, message: result.error }, { status: 409 });
     }
 
+    await EventRegistration.updateMany(
+      { "members.participantId": result.participant._id },
+      { $set: { "members.$[member].registerNumber": result.participant.registerNumber } },
+      { arrayFilters: [{ "member.participantId": result.participant._id }] },
+    );
     await createRegistrationFlow(result.participant._id.toString());
     // Person ID is deliberately not returned to the public registration client.
     return NextResponse.json({
@@ -112,10 +125,13 @@ export async function PUT(request: Request) {
 
     const parsed = editSchema.safeParse(await request.json());
     if (!parsed.success) {
-      return NextResponse.json({ success: false, message: "Please check all your profile details, including your email address.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Please check all your profile details, including your college register number and email address.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
     const email = normalizeRegistrationEmail(parsed.data.email);
+    let registerNumber: string;
+    try { registerNumber = normalizeRegisterNumber(parsed.data.registerNumber); }
+    catch (error) { return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Enter a valid college register number." }, { status: 400 }); }
     if (participant.email && participant.email !== email) {
       return NextResponse.json({ success: false, message: "Your registered email cannot be changed here. Contact the organisers if it needs correction." }, { status: 409 });
     }
@@ -131,12 +147,13 @@ export async function PUT(request: Request) {
     const protectedDetailsChanged =
       parsed.data.college.trim() !== participant.college ||
       parsed.data.city.trim() !== participant.city ||
-      parsed.data.department.trim() !== participant.department;
+      parsed.data.department.trim() !== participant.department ||
+      (Boolean(participant.registerNumber) && registerNumber !== participant.registerNumber);
 
     if (hasEventRegistrations && protectedDetailsChanged) {
       return NextResponse.json({
         success: false,
-        message: "College, city and department cannot be changed after you have registered for an event. Contact the organisers if these details are incorrect.",
+        message: "College, city, department and an existing register number cannot be changed after you have registered for an event. Contact the organisers if these details are incorrect.",
       }, { status: 409 });
     }
 
@@ -148,11 +165,18 @@ export async function PUT(request: Request) {
       participant.department = parsed.data.department;
       participant.departmentKey = normalizeKey(parsed.data.department);
     }
+    if (!hasEventRegistrations || !participant.registerNumber) {
+      const rollOwner = await Participant.findOne({ collegeKey: participant.collegeKey, registerNumber }).select("_id").lean();
+      if (rollOwner && rollOwner._id.toString() !== participant._id.toString()) {
+        return NextResponse.json({ success: false, message: "This college register number is already linked to another participant." }, { status: 409 });
+      }
+      participant.registerNumber = registerNumber;
+    }
     await participant.save();
 
     await EventRegistration.updateMany(
       { "members.participantId": participant._id },
-      { $set: { "members.$[member].name": participant.name, "members.$[member].email": participant.email } },
+      { $set: { "members.$[member].name": participant.name, "members.$[member].email": participant.email, "members.$[member].registerNumber": participant.registerNumber } },
       { arrayFilters: [{ "member.participantId": participant._id }] },
     );
 

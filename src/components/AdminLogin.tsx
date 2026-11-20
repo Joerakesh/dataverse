@@ -26,7 +26,7 @@ export default function AdminLogin() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.success) throw new Error(data.message || "Unable to sign in.");
-      router.replace("/admin");
+      router.replace(data.admin?.role === "event_manager" ? "/admin/manage/registrations" : "/admin");
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to sign in.");

@@ -12,6 +12,7 @@ import {
   normalizeIndianMobile,
   normalizeKey,
   normalizeRegistrationEmail,
+  normalizeRegisterNumber,
 } from "@/src/lib/public-registration";
 import { isEventRegistrationOpen } from "@/src/lib/event-registration-settings";
 
@@ -21,6 +22,7 @@ const schema = z.object({
     name: z.string().trim().min(2).max(100),
     mobile: z.string().trim().min(10).max(20),
     email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+    registerNumber: z.string().trim().min(1).max(60),
   })).min(1).max(3),
 });
 
@@ -102,6 +104,7 @@ export async function POST(request: Request) {
       name: member.name.trim(),
       mobile: normalizeIndianMobile(member.mobile),
       email: normalizeRegistrationEmail(member.email),
+      registerNumber: normalizeRegisterNumber(member.registerNumber),
     }));
     const phoneNumbers = membersWithDetails.map((member) => member.mobile);
     const emailAddresses = membersWithDetails.map((member) => member.email);
@@ -111,39 +114,63 @@ export async function POST(request: Request) {
     if (new Set(emailAddresses).size !== emailAddresses.length) {
       return NextResponse.json({ success: false, message: "Each team member must have a different email address." }, { status: 400 });
     }
+    const registerNumbers = membersWithDetails.map((member) => member.registerNumber);
+    if (new Set(registerNumbers).size !== registerNumbers.length) {
+      return NextResponse.json({ success: false, message: "Each team member must have a different college register number." }, { status: 400 });
+    }
 
-    const resolvedMembers = [];
-    for (const member of membersWithDetails) {
-      const result = await createOrFindParticipant({
+    const participantResults = await Promise.all(membersWithDetails.map((member) =>
+      createOrFindParticipant({
         name: member.name,
         mobile: member.mobile,
         email: member.email,
+        registerNumber: member.registerNumber,
         college: contact.college,
         city: contact.city,
         department: contact.department,
-      });
-      if ("error" in result) {
-        return NextResponse.json({ success: false, message: result.error }, { status: 409 });
-      }
+      }),
+    ));
+    const failedParticipant = participantResults.find((result) => "error" in result);
+    if (failedParticipant && "error" in failedParticipant) {
+      return NextResponse.json({ success: false, message: failedParticipant.error }, { status: 409 });
+    }
 
-      const previousEvents = await EventRegistration.distinct("eventSlug", {
-        "members.mobile": member.mobile,
-        status: "confirmed",
-      });
-      if (previousEvents.includes(event.slug)) {
+    // Resolve previous event history in one database query instead of one query per member.
+    const previousRegistrations = await EventRegistration.find({
+      status: "confirmed",
+      "members.mobile": { $in: phoneNumbers },
+    }).select("eventSlug members.mobile").lean();
+    const eventsByMobile = new Map<string, Set<string>>();
+    for (const registration of previousRegistrations) {
+      for (const registeredMember of registration.members) {
+        if (!phoneNumbers.includes(registeredMember.mobile)) continue;
+        const history = eventsByMobile.get(registeredMember.mobile) ?? new Set<string>();
+        history.add(registration.eventSlug);
+        eventsByMobile.set(registeredMember.mobile, history);
+      }
+    }
+
+    for (const member of membersWithDetails) {
+      const previousEvents = eventsByMobile.get(member.mobile) ?? new Set<string>();
+      if (previousEvents.has(event.slug)) {
         return NextResponse.json({ success: false, message: member.name + " is already registered for this event." }, { status: 409 });
       }
-      if (previousEvents.length >= 2) {
+      if (previousEvents.size >= 2) {
         return NextResponse.json({ success: false, message: member.name + " has already reached the two-event participation limit." }, { status: 409 });
       }
+    }
 
-      resolvedMembers.push({
+    const resolvedMembers = membersWithDetails.map((member, index) => {
+      const result = participantResults[index];
+      if (!result || "error" in result) throw new Error("Unable to resolve participant profile.");
+      return {
         participantId: result.participant._id,
         name: result.participant.name,
         mobile: result.participant.mobile,
         email: result.participant.email,
-      });
-    }
+        registerNumber: result.participant.registerNumber,
+      };
+    });
 
     const collegeKey = contact.collegeKey || normalizeKey(contact.college);
     if (event.slug === "dark-quest-blindfold-clues") {
@@ -163,7 +190,7 @@ export async function POST(request: Request) {
       }
     }
 
-    for (const member of resolvedMembers) {
+    const reservationResults = await Promise.all(resolvedMembers.map(async (member) => {
       const updated = await Participant.findOneAndUpdate(
         {
           _id: member.participantId,
@@ -173,16 +200,22 @@ export async function POST(request: Request) {
         { $addToSet: { eventSlugs: event.slug } },
         { returnDocument: "after" },
       );
+      if (updated) return { member, updated: true as const };
 
-      if (!updated) {
-        const current = await Participant.findById(member.participantId).select("eventSlugs").lean();
-        const alreadyInEvent = current?.eventSlugs?.includes(event.slug);
-        throw new Error(alreadyInEvent
-          ? "DUPLICATE_EVENT_MEMBER:" + member.name
-          : "EVENT_LIMIT_REACHED:" + member.name);
-      }
+      const current = await Participant.findById(member.participantId).select("eventSlugs").lean();
+      return {
+        member,
+        updated: false as const,
+        error: current?.eventSlugs?.includes(event.slug) ? "DUPLICATE_EVENT_MEMBER:" : "EVENT_LIMIT_REACHED:",
+      };
+    }));
+    claimedParticipantIds = reservationResults
+      .filter((result) => result.updated)
+      .map((result) => result.member.participantId.toString());
 
-      claimedParticipantIds.push(member.participantId.toString());
+    const failedReservation = reservationResults.find((result) => !result.updated);
+    if (failedReservation && !failedReservation.updated) {
+      throw new Error(failedReservation.error + failedReservation.member.name);
     }
 
     const registration = await EventRegistration.create({
@@ -233,7 +266,7 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.message.startsWith("EVENT_LIMIT_REACHED:")) {
       return NextResponse.json({ success: false, message: error.message.split(":").slice(1).join(":") + " has already reached the two-event participation limit." }, { status: 409 });
     }
-    if (error instanceof Error && /mobile number|email address/i.test(error.message)) {
+    if (error instanceof Error && /mobile number|email address|register number/i.test(error.message)) {
       return NextResponse.json({ success: false, message: error.message }, { status: 400 });
     }
     if (error && typeof error === "object" && "code" in error && error.code === 11000) {

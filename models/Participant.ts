@@ -16,6 +16,7 @@ const ParticipantSchema = new Schema(
     },
     college: { type: String, required: true, trim: true, maxlength: 180 },
     collegeKey: { type: String, required: true, index: true },
+    registerNumber: { type: String, trim: true, uppercase: true, maxlength: 60, default: "" },
     city: { type: String, required: true, trim: true, maxlength: 100 },
     department: { type: String, required: true, trim: true, maxlength: 120 },
     departmentKey: { type: String, required: true, index: true },
@@ -23,5 +24,7 @@ const ParticipantSchema = new Schema(
   },
   { timestamps: true },
 );
+
+ParticipantSchema.index({ collegeKey: 1, registerNumber: 1 }, { unique: true, partialFilterExpression: { registerNumber: { $type: "string", $gt: "" } } });
 
 export default models.Participant || model("Participant", ParticipantSchema);
