@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Invalid participant contact details." }, { status: 400 });
     }
 
-    const result = await createOrFindParticipant({ ...parsed.data, mobile, email });
+    let registerNumber: string;\n    try { registerNumber = parsed.data.registerNumber.trim().toUpperCase(); } catch { return NextResponse.json({ success: false, message: "Enter a valid college register number." }, { status: 400 }); }\n    const result = await createOrFindParticipant({ ...parsed.data, registerNumber, mobile, email });
     if ("error" in result) {
       return NextResponse.json({ success: false, message: result.error }, { status: 409 });
     }
@@ -131,7 +131,7 @@ export async function PUT(request: Request) {
     const protectedDetailsChanged =
       parsed.data.college.trim() !== participant.college ||
       parsed.data.city.trim() !== participant.city ||
-      parsed.data.department.trim() !== participant.department;
+      parsed.data.department.trim() !== participant.department ||\n      parsed.data.registerNumber.trim().toUpperCase() !== (participant.registerNumber ?? "");
 
     if (hasEventRegistrations && protectedDetailsChanged) {
       return NextResponse.json({
