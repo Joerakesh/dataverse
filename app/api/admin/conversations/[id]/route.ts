@@ -28,7 +28,7 @@ export async function GET(_request: Request, context: RouteContext<"/api/admin/c
               registerNumber: "registerNumber" in item.participantId ? item.participantId.registerNumber : "",
             }
           : null,
-        messages: item.messages.map((message) => ({ id: message.messageId, role: message.role, text: message.text })),
+        messages: item.messages.map((message: { messageId: string; role: "assistant" | "user"; text: string }) => ({ id: message.messageId, role: message.role, text: message.text })),
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
       },
