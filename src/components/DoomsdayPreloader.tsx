@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import Image from "next/image";
-import { Zap, Terminal, Sparkles } from "lucide-react";
+import { Zap, Terminal } from "lucide-react";
 import { sounds } from "@/src/utils/soundEffects";
 
 interface DoomsdayPreloaderProps {
@@ -22,8 +21,22 @@ export default function DoomsdayPreloader({ onComplete }: DoomsdayPreloaderProps
     "DR. DOOM DECREES: DATAVERSE 2K26 ASSEMBLE.",
   ];
 
-  // Procedural Lightning & Smoke Canvas Engine
+  // Keep the landing page stationary while the intro is visible.
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const initialScrollY = window.scrollY;
+    document.body.style.overflow = "hidden";
+    window.scrollTo(0, 0);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.scrollTo(0, initialScrollY);
+    };
+  }, []);
+
+  // Lightweight procedural smoke and lightning for the intro.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -51,7 +64,7 @@ export default function DoomsdayPreloader({ onComplete }: DoomsdayPreloaderProps
       growth: number;
     }[] = [];
 
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 18; i++) {
       smokeParticles.push({
         x: width / 2 + (Math.random() - 0.5) * 160,
         y: height / 2 + (Math.random() - 0.5) * 160,
@@ -98,8 +111,14 @@ export default function DoomsdayPreloader({ onComplete }: DoomsdayPreloaderProps
     };
 
     let tick = 0;
+    let lastFrame = 0;
 
-    const render = () => {
+    const render = (timestamp: number) => {
+      if (timestamp - lastFrame < 33) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
+      lastFrame = timestamp;
       ctx.clearRect(0, 0, width, height);
       tick++;
 
@@ -171,8 +190,12 @@ export default function DoomsdayPreloader({ onComplete }: DoomsdayPreloaderProps
 
     const completionTimer = setTimeout(() => {
       setIsExiting(true);
-      setTimeout(onComplete, 800);
-    }, 4200);
+      window.setTimeout(() => {
+        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        window.scrollTo(0, 0);
+        onComplete();
+      }, 450);
+    }, 2400);
 
     return () => {
       clearInterval(statusInterval);
@@ -182,7 +205,7 @@ export default function DoomsdayPreloader({ onComplete }: DoomsdayPreloaderProps
 
   return (
     <div
-      className={`fixed inset-0 z-[100] bg-[#020508] flex flex-col items-center justify-center p-6 select-none transition-all duration-700 ${
+      className={`fixed inset-0 z-[100] bg-[#020508] flex flex-col items-center justify-center p-6 select-none transition-opacity duration-500 ${
         isExiting ? "opacity-0 scale-105 pointer-events-none" : "opacity-100 scale-100"
       }`}
     >
@@ -246,7 +269,11 @@ export default function DoomsdayPreloader({ onComplete }: DoomsdayPreloaderProps
              onClick={() => {
                sounds.playClick();
                setIsExiting(true);
-               setTimeout(onComplete, 300);
+               window.setTimeout(() => {
+              if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+              window.scrollTo(0, 0);
+              onComplete();
+            }, 250);
              }}>
           
           {/* Radial Emerald Plasma Burst Behind Reactor */}
@@ -314,7 +341,11 @@ export default function DoomsdayPreloader({ onComplete }: DoomsdayPreloaderProps
           onClick={() => {
             sounds.playClick();
             setIsExiting(true);
-            setTimeout(onComplete, 300);
+            window.setTimeout(() => {
+              if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+              window.scrollTo(0, 0);
+              onComplete();
+            }, 250);
           }}
           className="text-[11px] font-tech uppercase tracking-[0.25em] text-slate-500 hover:text-emerald-400 transition-colors border-b border-transparent hover:border-emerald-400 py-0.5"
         >
