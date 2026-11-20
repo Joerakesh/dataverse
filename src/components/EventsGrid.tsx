@@ -1,14 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import Image from "next/image";
 import { SYMPOSIUM_EVENTS, SymposiumEvent } from "@/src/data/events";
 import { CheckCircle2, ChevronRight, Phone, Sparkles, Users, X } from "lucide-react";
 import { sounds } from "@/src/utils/soundEffects";
+import EventTransition from "@/src/components/EventTransition";
 
 export default function EventsGrid() {
   const [activeTab, setActiveTab] = useState("All");
   const [selectedEvent, setSelectedEvent] = useState<SymposiumEvent | null>(null);
+  const [transitionEvent, setTransitionEvent] = useState<SymposiumEvent | null>(null);
+
+  const completeTransition = useCallback(() => {
+    if (transitionEvent) setSelectedEvent(transitionEvent);
+    setTransitionEvent(null);
+  }, [transitionEvent]);
 
   const filteredEvents = SYMPOSIUM_EVENTS.filter((event) => {
     if (activeTab === "All") return true;
@@ -64,7 +71,7 @@ export default function EventsGrid() {
                   </div>
                 </div>
                 <div className="pt-4 border-t border-slate-800">
-                  <button onClick={() => { sounds.playClick(); setSelectedEvent(event); }} className="w-full py-2.5 px-3 rounded-lg bg-slate-900 border border-emerald-500/30 text-emerald-300 font-tech font-bold text-xs uppercase tracking-wider hover:bg-emerald-950/40 hover:border-emerald-400 transition-all text-center flex items-center justify-center gap-1">
+                  <button onClick={() => { sounds.playClick(); setTransitionEvent(event); }} className="w-full py-2.5 px-3 rounded-lg bg-slate-900 border border-emerald-500/30 text-emerald-300 font-tech font-bold text-xs uppercase tracking-wider hover:bg-emerald-950/40 hover:border-emerald-400 transition-all text-center flex items-center justify-center gap-1">
                     <span>RULES & ROUNDS</span><ChevronRight size={14}/>
                   </button>
                 </div>
@@ -73,6 +80,8 @@ export default function EventsGrid() {
           ))}
         </div>
       </div>
+
+      {transitionEvent && <EventTransition event={transitionEvent} onComplete={completeTransition} />}
 
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
