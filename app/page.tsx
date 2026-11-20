@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import DoomsdayPreloader from "@/src/components/DoomsdayPreloader";
 import FogCanvas from "@/src/components/FogCanvas";
 import Navbar from "@/src/components/Navbar";
@@ -12,6 +12,11 @@ import Footer from "@/src/components/Footer";
 export default function Home() {
   const [loadingComplete, setLoadingComplete] = useState(false);
   const completeLoading = useCallback(() => setLoadingComplete(true), []);
+  useEffect(() => {
+    const replay = () => { window.scrollTo({ top: 0, behavior: "auto" }); setLoadingComplete(false); };
+    window.addEventListener("dataverse:replay-intro", replay);
+    return () => window.removeEventListener("dataverse:replay-intro", replay);
+  }, []);
   return <>
     <FogCanvas/>
     {!loadingComplete && <DoomsdayPreloader onComplete={completeLoading}/>}
