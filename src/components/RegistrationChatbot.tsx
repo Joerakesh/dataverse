@@ -6,7 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, Bot, Check, Loader2, Mail, Pencil, Phone, Send, ShieldCheck, Users, X } from "lucide-react";
 
 type CollegeSuggestion = { name: string; city: string; district: string; category: string };
-type ParticipantProfile = { name: string; mobile: string; email: string; college: string; city: string; department: string };
+type ParticipantProfile = { name: string; mobile: string; email: string; college: string; city: string; department: string; registerNumber: string };
 type ChatMessage = { id: string; role: "assistant" | "user"; text: string };
 type EventCard = {
   id: string;
@@ -21,18 +21,20 @@ type EventCard = {
   image: string;
   registrationOpen: boolean;
 };
-type TeamMember = { name: string; mobile: string; email: string };
+type TeamMember = { name: string; mobile: string; email: string; registerNumber: string };
 
 const QUESTIONS = [
   "Which college are you from?",
   "Which city is your college located in?",
   "Which department are you studying in?",
   "What is your full name?",
+  "What is your college register number (roll number)?",
   "Please enter your 10-digit mobile number.",
   "What is your email address? We’ll use it for login codes and event updates.",
 ];
 
-const STORAGE_KEY = "dataverse-registration-draft-v1";
+const STORAGE_KEY = "dataverse-registration-draft-v2";
+const CHAT_ID_KEY = "dataverse-registration-chat-id";
 const COMMON_DEPARTMENTS = [
   "Computer Science", "Computer Applications", "Data Science", "Information Technology",
   "Mathematics", "Statistics", "Artificial Intelligence and Data Science",
@@ -62,7 +64,7 @@ export default function RegistrationChatbot() {
   const [mode, setMode] = useState<"welcome" | "chat" | "events" | "login-email" | "login-otp" | "lookup-email" | "lookup-otp" | "lookup-done">("welcome");
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<ParticipantProfile>({
-    college: "", city: "", department: "", name: "", mobile: "", email: "",
+    college: "", city: "", department: "", name: "", registerNumber: "", mobile: "", email: "",
   });
   const [profile, setProfile] = useState<ParticipantProfile | null>(null);
   const [showProfileEditor, setShowProfileEditor] = useState(false);
@@ -90,6 +92,7 @@ export default function RegistrationChatbot() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  const [conversationId, setConversationId] = useState("");
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const addMessage = useCallback((role: ChatMessage["role"], text: string) => {
@@ -108,8 +111,14 @@ export default function RegistrationChatbot() {
       } catch {
         window.sessionStorage.removeItem(STORAGE_KEY);
       }
+      let activeConversationId = window.sessionStorage.getItem(CHAT_ID_KEY);
+      if (!activeConversationId) {
+        activeConversationId = crypto.randomUUID();
+        window.sessionStorage.setItem(CHAT_ID_KEY, activeConversationId);
+      }
+      if (active) setConversationId(activeConversationId);
       if (stored?.draft && active) {
-        setDraft({ ...draft, ...stored.draft });
+        setDraft({ ...draft, registerNumber: "", ...stored.draft, registerNumber: stored.draft.registerNumber ?? "" });
         setStep(Math.min(Math.max(stored.step ?? 0, 0), QUESTIONS.length - 1));
         if (stored.messages?.length) setMessages(stored.messages);
         if ((stored.step ?? 0) > 0) setMode("chat");
@@ -175,6 +184,23 @@ export default function RegistrationChatbot() {
   }, [draft, step, messages, hydrated, profile]);
 
   useEffect(() => {
+    if (!hydrated || !conversationId || messages.length === 0) return;
+    const timeout = window.setTimeout(() => {
+      void fetch("/api/registration/conversation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        keepalive: true,
+        body: JSON.stringify({
+          conversationId,
+          messages: messages.slice(-200).map((message) => ({ id: message.id, role: message.role, text: message.text })),
+        }),
+      }).catch(() => undefined);
+    }, 400);
+    return () => window.clearTimeout(timeout);
+  }, [conversationId, hydrated, messages]);
+
+  useEffect(() => {
     const viewport = chatScrollRef.current;
     if (!viewport) return;
     viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
@@ -206,7 +232,7 @@ export default function RegistrationChatbot() {
     setMode("chat");
     setStep(0);
     setAnswer("");
-    setDraft({ college: "", city: "", department: "", name: "", mobile: "", email: "" });
+    setDraft({ college: "", city: "", department: "", name: "", registerNumber: "", mobile: "", email: "" });
     setSelectedCollege(null);
     setMessages((current) => [
       ...current,
@@ -278,6 +304,7 @@ export default function RegistrationChatbot() {
           college: profileEditDraft.college,
           city: profileEditDraft.city,
           department: profileEditDraft.department,
+          registerNumber: profileEditDraft.registerNumber,
         }),
       });
       const data = await readJson(response);
@@ -304,7 +331,7 @@ export default function RegistrationChatbot() {
       return;
     }
 
-    if (step === 4) {
+    if (step === 5) {
       const digits = value.replace(/\D/g, "");
       const normalized = digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits.length === 11 && digits.startsWith("0") ? digits.slice(1) : digits;
       if (!/^\d{10}$/.test(normalized)) {
@@ -313,13 +340,13 @@ export default function RegistrationChatbot() {
       }
       setDraft((current) => ({ ...current, mobile: normalized }));
       addMessage("user", value);
-      setStep(5);
+      setStep(6);
       setAnswer("");
-      appendAssistant(QUESTIONS[5]);
+      appendAssistant(QUESTIONS[6]);
       return;
     }
 
-    if (step === 5) {
+    if (step === 6) {
       const normalizedEmail = value.toLowerCase();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) {
         setError("Please enter a valid email address.");
@@ -359,7 +386,7 @@ export default function RegistrationChatbot() {
     } else if (step === 1) updated.city = value;
     else if (step === 2) updated.department = value;
     else if (step === 3) updated.name = value;
-    else if (step === 4) updated.mobile = value;
+    else if (step === 4) updated.registerNumber = value.toUpperCase();
 
     setDraft(updated);
     const nextStep = step + 1;
@@ -380,8 +407,8 @@ export default function RegistrationChatbot() {
     setIncludeContact(true);
     const initial: TeamMember[] = Array.from({ length: event.minTeam }, (_, index) =>
       index === 0 && profile
-        ? { name: profile.name, mobile: profile.mobile, email: profile.email }
-        : { name: "", mobile: "", email: "" },
+        ? { name: profile.name, mobile: profile.mobile, email: profile.email, registerNumber: profile.registerNumber }
+        : { name: "", mobile: "", email: "", registerNumber: "" },
     );
     setMembers(initial);
   };
@@ -391,8 +418,8 @@ export default function RegistrationChatbot() {
     if (!profile || !selectedEvent) return;
     setMembers((current) => {
       const next = current.map((member) => ({ ...member }));
-      if (checked) next[0] = { name: profile.name, mobile: profile.mobile, email: profile.email };
-      else next[0] = { name: "", mobile: "", email: "" };
+      if (checked) next[0] = { name: profile.name, mobile: profile.mobile, email: profile.email, registerNumber: profile.registerNumber };
+      else next[0] = { name: "", mobile: "", email: "", registerNumber: "" };
       return next;
     });
   };
@@ -403,7 +430,7 @@ export default function RegistrationChatbot() {
 
   const addMember = () => {
     if (!selectedEvent || members.length >= selectedEvent.maxTeam) return;
-    setMembers((current) => [...current, { name: "", mobile: "", email: "" }]);
+    setMembers((current) => [...current, { name: "", mobile: "", email: "", registerNumber: "" }]);
   };
 
   const removeMember = (index: number) => {
@@ -420,9 +447,10 @@ export default function RegistrationChatbot() {
       name: member.name.trim(),
       mobile: normalizeTeamMobile(member.mobile),
       email: member.email.trim().toLowerCase(),
+      registerNumber: member.registerNumber.trim().toUpperCase(),
     }));
-    if (cleaned.some((member) => !member.name || !/^\d{10}$/.test(member.mobile) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email))) {
-      setError("Enter a name, valid mobile number and valid email address for every team member.");
+    if (cleaned.some((member) => !member.name || !/^\d{10}$/.test(member.mobile) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email) || !/^[A-Z0-9][A-Z0-9./ -]{0,59}$/.test(member.registerNumber))) {
+      setError("Enter a name, valid register number, valid mobile number and valid email address for every team member.");
       return;
     }
     if (new Set(cleaned.map((member) => member.mobile)).size !== cleaned.length) {
@@ -877,6 +905,10 @@ export default function RegistrationChatbot() {
                 <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">Department</span>
                 <input required minLength={2} maxLength={120} value={profileEditDraft.department} disabled={profileFieldsLocked || registeredEventSlugs.length > 0} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, department: event.target.value } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
               </label>
+              <label className="block space-y-1.5">
+                <span className="text-[10px] font-tech font-bold uppercase tracking-wider text-slate-400">College register number / roll number</span>
+                <input required minLength={1} maxLength={60} value={profileEditDraft.registerNumber} disabled={(profileFieldsLocked || registeredEventSlugs.length > 0) && Boolean(profile?.registerNumber)} onChange={(event) => setProfileEditDraft((current) => current ? { ...current, registerNumber: event.target.value.toUpperCase() } : current)} className="w-full rounded-xl border border-slate-700 bg-[#060b0e] px-3 py-3 text-sm font-tech text-slate-100 outline-none focus:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"/>
+              </label>
               {(profileFieldsLocked || registeredEventSlugs.length > 0) && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs font-tech leading-relaxed text-amber-200">
                   You have already registered for an event. College, city and department are locked because they are part of the saved event registration. Your name can still be corrected. For other corrections, contact the organisers.
@@ -904,7 +936,7 @@ export default function RegistrationChatbot() {
                 <div className="text-xs font-tech font-bold text-slate-200 mb-2">How many students are in your team?</div>
                 <div className="flex gap-2">
                   {Array.from({ length: selectedEvent.maxTeam - selectedEvent.minTeam + 1 }, (_, index) => selectedEvent.minTeam + index).map((size) => (
-                    <button key={size} type="button" onClick={() => setMembers((current) => size < current.length ? current.slice(0, size) : [...current, ...Array.from({ length: size - current.length }, () => ({ name: "", mobile: "", email: "" }))])} className={"flex-1 rounded-lg border py-2 text-sm font-tech font-bold transition " + (members.length === size ? "border-emerald-400 bg-emerald-500 text-black" : "border-slate-700 bg-slate-900 text-slate-300 hover:border-emerald-500/50")}>
+                    <button key={size} type="button" onClick={() => setMembers((current) => size < current.length ? current.slice(0, size) : [...current, ...Array.from({ length: size - current.length }, () => ({ name: "", mobile: "", email: "", registerNumber: "" }))])} className={"flex-1 rounded-lg border py-2 text-sm font-tech font-bold transition " + (members.length === size ? "border-emerald-400 bg-emerald-500 text-black" : "border-slate-700 bg-slate-900 text-slate-300 hover:border-emerald-500/50")}>
                       {size}
                     </button>
                   ))}
@@ -913,7 +945,7 @@ export default function RegistrationChatbot() {
               </div>
               <label className="flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-3">
                 <input type="checkbox" checked={includeContact} onChange={(event) => toggleContact(event.target.checked)} className="mt-1 accent-emerald-500"/>
-                <span><span className="block text-sm font-tech font-bold text-slate-100">Include me as a team member</span><span className="block text-xs font-tech text-slate-500 mt-0.5">Your registered name, mobile number and email will be added as the first participant.</span></span>
+                <span><span className="block text-sm font-tech font-bold text-slate-100">Include me as a team member</span><span className="block text-xs font-tech text-slate-500 mt-0.5">Your registered name, roll number, mobile number and email will be added as the first participant.</span></span>
               </label>
               <div className="space-y-3">
                 {members.map((member, index) => (
@@ -926,6 +958,7 @@ export default function RegistrationChatbot() {
                       <input value={member.name} onChange={(event) => updateMember(index, "name", event.target.value)} disabled={includeContact && index === 0} placeholder="Student full name" className="w-full rounded-lg border border-slate-700 bg-[#060b0e] px-3 py-2.5 text-sm font-tech text-slate-100 disabled:opacity-60"/>
                       <input value={member.mobile} onChange={(event) => updateMember(index, "mobile", event.target.value)} disabled={includeContact && index === 0} placeholder="10-digit mobile number" type="tel" inputMode="tel" maxLength={14} className="w-full rounded-lg border border-slate-700 bg-[#060b0e] px-3 py-2.5 text-sm font-tech text-slate-100 disabled:opacity-60"/>
                       <input value={member.email} onChange={(event) => updateMember(index, "email", event.target.value)} disabled={includeContact && index === 0} placeholder="Email address" type="email" inputMode="email" maxLength={254} className="w-full rounded-lg border border-slate-700 bg-[#060b0e] px-3 py-2.5 text-sm font-tech text-slate-100 disabled:opacity-60"/>
+                      <input value={member.registerNumber} onChange={(event) => updateMember(index, "registerNumber", event.target.value.toUpperCase())} disabled={includeContact && index === 0} placeholder="College register no. / roll no." maxLength={60} className="w-full rounded-lg border border-slate-700 bg-[#060b0e] px-3 py-2.5 text-sm font-tech text-slate-100 disabled:opacity-60"/>
                     </div>
                   </div>
                 ))}
