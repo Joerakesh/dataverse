@@ -118,7 +118,7 @@ export default function RegistrationChatbot() {
       }
       if (active) setConversationId(activeConversationId);
       if (stored?.draft && active) {
-        setDraft({ ...draft, registerNumber: "", ...stored.draft, registerNumber: stored.draft.registerNumber ?? "" });
+        setDraft({ ...draft, ...stored.draft, registerNumber: stored.draft.registerNumber ?? "" });
         setStep(Math.min(Math.max(stored.step ?? 0, 0), QUESTIONS.length - 1));
         if (stored.messages?.length) setMessages(stored.messages);
         if ((stored.step ?? 0) > 0) setMode("chat");
