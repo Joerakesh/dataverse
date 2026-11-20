@@ -93,7 +93,7 @@ export default function DoomsdayPreloader({ onComplete }: Props) {
         >
           <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_52%,rgba(0,255,102,.16),transparent_43%),linear-gradient(180deg,rgba(0,0,0,.2),#050806)]" />
-          <div className="pointer-events-none absolute left-1/2 top-0 h-[55vh] w-24 -translate-x-1/2 bg-gradient-to-b from-emerald-300/40 via-emerald-500/10 to-transparent blur-2xl" />
+          <motion.div initial={{ scaleY: 0, opacity: 0 }} animate={{ scaleY: [0, 1, .4], opacity: [0, .85, 0] }} transition={{ duration: .9, ease: "easeOut" }} style={{ transformOrigin: "top center" }} className="pointer-events-none absolute left-1/2 top-0 h-[55vh] w-24 -translate-x-1/2 bg-gradient-to-b from-emerald-300/40 via-emerald-500/10 to-transparent blur-2xl" />
           <div className="pointer-events-none absolute inset-4 rounded-xl border border-emerald-400/20 sm:inset-7" />
           <div className="pointer-events-none absolute left-5 top-5 h-9 w-9 border-l-2 border-t-2 border-emerald-400/60 sm:left-8 sm:top-8 sm:h-12 sm:w-12" />
           <div className="pointer-events-none absolute right-5 top-5 h-9 w-9 border-r-2 border-t-2 border-emerald-400/60 sm:right-8 sm:top-8 sm:h-12 sm:w-12" />
