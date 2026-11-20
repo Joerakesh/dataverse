@@ -86,10 +86,13 @@ export default function EventsGrid() {
       </div>
 
       {openingEvent && (
-        <div className="event-reveal fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-[#020508]" role="status" aria-label={`Entering ${openingEvent.name}`}>
+        <div className={`event-reveal event-reveal-${openingEvent.character.alias.toLowerCase().replace(/[^a-z]+/g, "-")} fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-[#020508]`} role="status" aria-label={`Entering ${openingEvent.name}`}>
           <Image src={openingEvent.character.image} alt="" fill priority sizes="100vw" className="object-cover object-center opacity-45" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,255,136,.18),transparent_52%),linear-gradient(180deg,rgba(2,5,8,.25),#020508)]" />
           <div className="event-reveal-frame absolute inset-5 rounded-2xl border border-emerald-300/35 sm:inset-10" />
+          <div aria-hidden="true" className="event-vfx absolute inset-0 pointer-events-none" />
+          <div aria-hidden="true" className="event-energy-ring event-energy-ring-one" />
+          <div aria-hidden="true" className="event-energy-ring event-energy-ring-two" />
           <div className="relative z-10 mx-auto flex max-w-xl flex-col items-center px-6 text-center">
             <div className="mb-5 rounded-full border border-emerald-300/35 bg-black/55 px-4 py-1.5 font-tech text-[10px] font-bold uppercase tracking-[.32em] text-emerald-200">Multiverse access granted</div>
             <p className="font-tech text-xs uppercase tracking-[.35em] text-emerald-300">{openingEvent.character.alias} · {openingEvent.category}</p>
@@ -101,8 +104,8 @@ export default function EventsGrid() {
       )}
 
       {selectedEvent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="doom-card rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-emerald-500/40 p-6 sm:p-8 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-3 sm:p-6 bg-black/85 backdrop-blur-md" role="dialog" aria-modal="true" aria-label={`${selectedEvent.name} event details`}>
+          <div className="doom-card relative my-auto w-full max-w-2xl max-h-[min(90dvh,900px)] overflow-y-auto overscroll-contain rounded-2xl border border-emerald-500/40 p-4 sm:p-8">
             <button onClick={() => { sounds.playClick(); setSelectedEvent(null); }} className="absolute top-5 right-5 p-2 rounded-full bg-slate-900 text-slate-300 hover:text-emerald-400 hover:bg-slate-800 transition-colors" aria-label="Close event rules"><X size={20}/></button>
             <div className="flex items-center gap-4 mb-6">
               <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-emerald-400/50 flex-shrink-0">
