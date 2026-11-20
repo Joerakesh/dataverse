@@ -28,7 +28,7 @@ export function normalizeIndianMobile(value: string) {
 }
 
 export function normalizeRegisterNumber(value: string) {
-  const registerNumber = value.trim().replace(/\\s+/g, " ").toUpperCase();
+  const registerNumber = value.trim().replace(/\s+/g, " ").toUpperCase();
   if (registerNumber.length > 60 || !/^[A-Z0-9][A-Z0-9./ -]*$/.test(registerNumber)) {
     throw new Error("Enter a valid college register number.");
   }
