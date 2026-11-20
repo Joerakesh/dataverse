@@ -87,7 +87,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Invalid participant contact details." }, { status: 400 });
     }
 
-    let registerNumber: string;\n    try { registerNumber = parsed.data.registerNumber.trim().toUpperCase(); } catch { return NextResponse.json({ success: false, message: "Enter a valid college register number." }, { status: 400 }); }\n    const result = await createOrFindParticipant({ ...parsed.data, registerNumber, mobile, email });
+    let registerNumber: string;
+    try { registerNumber = normalizeRegisterNumber(parsed.data.registerNumber); }
+    catch (error) { return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Enter a valid college register number." }, { status: 400 }); }
+    const result = await createOrFindParticipant({ ...parsed.data, registerNumber, mobile, email });
     if ("error" in result) {
       return NextResponse.json({ success: false, message: result.error }, { status: 409 });
     }
@@ -138,12 +141,13 @@ export async function PUT(request: Request) {
     const protectedDetailsChanged =
       parsed.data.college.trim() !== participant.college ||
       parsed.data.city.trim() !== participant.city ||
-      parsed.data.department.trim() !== participant.department ||\n      parsed.data.registerNumber.trim().toUpperCase() !== (participant.registerNumber ?? "");
+      parsed.data.department.trim() !== participant.department ||
+      (Boolean(participant.registerNumber) && registerNumber !== participant.registerNumber);
 
     if (hasEventRegistrations && protectedDetailsChanged) {
       return NextResponse.json({
         success: false,
-        message: "College, city and department cannot be changed after you have registered for an event. Contact the organisers if these details are incorrect.",
+        message: "College, city, department and an existing register number cannot be changed after you have registered for an event. Contact the organisers if these details are incorrect.",
       }, { status: 409 });
     }
 
@@ -154,13 +158,19 @@ export async function PUT(request: Request) {
       participant.city = parsed.data.city;
       participant.department = parsed.data.department;
       participant.departmentKey = normalizeKey(parsed.data.department);
+    }
+    if (!participant.registerNumber) {
+      const rollOwner = await Participant.findOne({ collegeKey: participant.collegeKey, registerNumber }).select("_id").lean();
+      if (rollOwner && rollOwner._id.toString() !== participant._id.toString()) {
+        return NextResponse.json({ success: false, message: "This college register number is already linked to another participant." }, { status: 409 });
+      }
       participant.registerNumber = registerNumber;
     }
     await participant.save();
 
     await EventRegistration.updateMany(
       { "members.participantId": participant._id },
-      { $set: { "members.$[member].name": participant.name, "members.$[member].email": participant.email } },
+      { $set: { "members.$[member].name": participant.name, "members.$[member].email": participant.email, "members.$[member].registerNumber": participant.registerNumber } },
       { arrayFilters: [{ "member.participantId": participant._id }] },
     );
 
