@@ -46,8 +46,8 @@ export default function EventsGrid() {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
           {filteredEvents.map((event) => (
             <article key={event.slug} className="group relative flex transform-gpu flex-col overflow-hidden rounded-2xl border border-emerald-400/15 bg-[#07100c]/90 shadow-[0_18px_50px_rgba(0,0,0,.28)] [transform-style:preserve-3d] transition-[border-color,transform,box-shadow] duration-300 hover:[transform:perspective(1200px)_rotateX(1deg)_rotateY(-1deg)_translateY(-5px)] hover:border-emerald-300/50 hover:shadow-[0_22px_60px_rgba(0,255,136,.12)] motion-reduce:transform-none">
-              <div className="relative h-60 w-full overflow-hidden bg-slate-950 sm:h-64">
-                <Image src={event.character.image} alt={event.character.alias} fill className="object-cover object-center brightness-[.88] contrast-[1.08] transition-transform duration-700 ease-out group-hover:scale-[1.06] motion-reduce:transform-none"/>
+              <div className="relative h-60 w-full overflow-hidden bg-[radial-gradient(ellipse_at_50%_38%,rgba(16,185,129,.10),#050b09_72%)] sm:h-64">
+                <Image src={event.character.image} alt={event.character.alias} fill className="object-contain object-center p-2 brightness-[.94] contrast-[1.04] transition-transform duration-700 ease-out group-hover:scale-[1.035] motion-reduce:transform-none"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#05080c] via-[#05080c]/35 to-transparent"/>
                 <div className="absolute top-4 left-4">
                   <span className="px-3 py-1 rounded bg-black/80 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-xs font-tech font-bold uppercase tracking-wider">{event.character.alias}</span>
