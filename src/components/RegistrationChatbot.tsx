@@ -913,7 +913,7 @@ export default function RegistrationChatbot() {
               </label>
               {(profileFieldsLocked || registeredEventSlugs.length > 0) && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs font-tech leading-relaxed text-amber-200">
-                  You have already registered for an event. College, city and department are locked because they are part of the saved event registration. Your name can still be corrected. For other corrections, contact the organisers.
+                  You have already registered for an event. College, city and department are locked. Your existing roll number cannot be changed; if no roll number is on file yet, add it here. Your name can still be corrected.
                 </div>
               )}
               {error && <div className="rounded-lg border border-red-500/30 bg-red-950/30 px-3 py-2 text-xs font-tech text-red-300">{error}</div>}
