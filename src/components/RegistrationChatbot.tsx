@@ -143,7 +143,8 @@ export default function RegistrationChatbot() {
           setProfile(restoredProfile);
           setDraft(restoredProfile);
           setMode("events");
-          setMessages((current) => [...current, makeMessage("assistant", "Welcome back, " + restoredProfile.name + "! Here is the participant profile currently registered with us. Would you like to review or edit any details?")]);          window.sessionStorage.removeItem(STORAGE_KEY);
+          setMessages((current) => [...current, makeMessage("assistant", "Welcome back, " + restoredProfile.name + "! Here is the participant profile currently registered with us. Would you like to review or edit any details?")]);
+          window.sessionStorage.removeItem(STORAGE_KEY);
           const eventsResponse = await fetch("/api/registration/events", { cache: "no-store" });
           const eventsData = await readJson(eventsResponse);
           if (active) {
