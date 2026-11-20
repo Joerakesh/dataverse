@@ -2,7 +2,7 @@ import { connection, NextResponse } from "next/server";
 import EventRegistration from "@/models/EventRegistration";
 import Event from "@/models/Event";
 import "@/models/Participant";
-import { requireAdmin, requirePermission } from "@/src/lib/authorization";
+import { requireAdmin } from "@/src/lib/authorization";
 
 function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -12,7 +12,9 @@ export async function GET(request: Request) {
   await connection();
   try {
     const admin = await requireAdmin();
-    await requirePermission("registrations:view");
+    if (admin.role !== "superadmin" && !admin.permissions.includes("*") && !admin.permissions.includes("registrations:view")) {
+      throw new Error("FORBIDDEN");
+    }
 
     const url = new URL(request.url);
     const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
