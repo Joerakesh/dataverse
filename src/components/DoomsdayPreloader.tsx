@@ -31,7 +31,7 @@ export default function DoomsdayPreloader({ onComplete }: Props) {
     window.scrollTo(0, 0);
     return () => {
       document.body.style.overflow = oldOverflow;
-      timers.current.forEach(window.clearTimeout);
+      timers.current.forEach((timer) => window.clearTimeout(timer));
     };
   }, []);
 
