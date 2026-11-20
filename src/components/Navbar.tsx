@@ -4,16 +4,45 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, X, Sparkles, Volume2, VolumeX, Download } from "lucide-react";
 import { sounds } from "@/src/utils/soundEffects";
+import { doomsdayMusic } from "@/src/audio/doomsdayTheme";
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   const toggleSound = () => {
-    sounds.enabled = !soundEnabled;
-    setSoundEnabled(!soundEnabled);
-    if (!soundEnabled) sounds.playClick();
+    const next = !soundEnabled;
+    sounds.enabled = next;
+    setSoundEnabled(next);
+    if (next) {
+      sounds.playClick();
+      void doomsdayMusic.start();
+    } else {
+      doomsdayMusic.stop();
+    }
   };
+
+  // Browsers block autoplay, so the Doomsday score begins on the visitor's
+  // first click / tap / key press (unless they have muted it).
+  useEffect(() => {
+    const begin = () => {
+      if (!sounds.enabled) return;
+      void doomsdayMusic.start();
+      cleanup();
+    };
+    const cleanup = () => {
+      window.removeEventListener("click", begin);
+      window.removeEventListener("keydown", begin);
+      window.removeEventListener("touchend", begin);
+    };
+    window.addEventListener("click", begin);
+    window.addEventListener("keydown", begin);
+    window.addEventListener("touchend", begin);
+    return () => {
+      cleanup();
+      doomsdayMusic.stop();
+    };
+  }, []);
 
   const navLinks = [
     { href: "#tesseract", label: "3D Tesseract" },
@@ -74,7 +103,7 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-3 xl:flex">
-          <button type="button" onClick={toggleSound} className="rounded-lg border border-slate-700 bg-slate-900 p-2 text-slate-400 transition-colors hover:border-emerald-500/50 hover:text-emerald-400" title={soundEnabled ? "Mute SFX" : "Unmute SFX"} aria-label={soundEnabled ? "Mute sound effects" : "Enable sound effects"}>
+          <button type="button" onClick={toggleSound} className="rounded-lg border border-slate-700 bg-slate-900 p-2 text-slate-400 transition-colors hover:border-emerald-500/50 hover:text-emerald-400" title={soundEnabled ? "Mute sound & music" : "Unmute sound & music"} aria-label={soundEnabled ? "Mute sound and Doomsday music" : "Enable sound and Doomsday music"}>
             {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
           <Link href="/register" onClick={() => sounds.playClick()} className="btn-avengers rounded bg-gradient-to-r from-emerald-500 to-green-600 px-5 py-2.5 font-avengers text-base font-bold tracking-wider text-black shadow-[0_0_15px_rgba(0,255,136,.4)]">
@@ -83,7 +112,7 @@ export default function Navbar() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1 xl:hidden">
-          <button type="button" onClick={toggleSound} className="rounded-lg p-2 text-slate-400 transition-colors hover:text-emerald-400" aria-label={soundEnabled ? "Mute sound effects" : "Enable sound effects"}>
+          <button type="button" onClick={toggleSound} className="rounded-lg p-2 text-slate-400 transition-colors hover:text-emerald-400" aria-label={soundEnabled ? "Mute sound and Doomsday music" : "Enable sound and Doomsday music"}>
             {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
           </button>
           <button type="button" onClick={() => setMobileMenuOpen((open) => !open)} className="rounded-lg p-2 text-slate-300 transition-colors hover:text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400" aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={mobileMenuOpen} aria-controls="mobile-navigation">
