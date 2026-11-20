@@ -1,92 +1,25 @@
 "use client";
-
 import { useEffect, useRef } from "react";
-
-export default function FogCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext("2d", { alpha: true });
-    if (!canvas || !context) return;
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let width = 0;
-    let height = 0;
-    let frame = 0;
-    let lastFrame = 0;
-    let visible = !document.hidden;
-
-    const resize = () => {
-      const ratio = Math.min(window.devicePixelRatio || 1, 1.35);
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas.width = Math.round(width * ratio);
-      canvas.height = Math.round(height * ratio);
-      canvas.style.width = width + "px";
-      canvas.style.height = height + "px";
-      context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    };
-
-    const mobile = window.matchMedia("(max-width: 640px)").matches;
-    const embers = Array.from({ length: mobile ? 12 : 22 }, () => ({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      radius: 0.7 + Math.random() * 1.4,
-      speed: 0.12 + Math.random() * 0.28,
-      alpha: 0.12 + Math.random() * 0.32,
-      phase: Math.random() * Math.PI * 2,
-    }));
-
-    const render = (timestamp: number) => {
-      if (!visible || reducedMotion) return;
-      if (timestamp - lastFrame < 33) {
-        frame = requestAnimationFrame(render);
-        return;
-      }
-      lastFrame = timestamp;
-      context.clearRect(0, 0, width, height);
-
-      for (const ember of embers) {
-        ember.y -= ember.speed;
-        ember.phase += 0.012;
-        ember.x += Math.sin(ember.phase) * 0.18;
-        if (ember.y < -8) {
-          ember.y = height + 8;
-          ember.x = Math.random() * width;
-        }
-        const glow = context.createRadialGradient(ember.x, ember.y, 0, ember.x, ember.y, ember.radius * 5);
-        glow.addColorStop(0, "rgba(0,255,136," + ember.alpha + ")");
-        glow.addColorStop(1, "rgba(0,255,136,0)");
-        context.fillStyle = glow;
-        context.beginPath();
-        context.arc(ember.x, ember.y, ember.radius * 5, 0, Math.PI * 2);
-        context.fill();
-      }
-      frame = requestAnimationFrame(render);
-    };
-
-    const onVisibility = () => {
-      visible = !document.hidden;
-      if (visible && !reducedMotion) {
-        lastFrame = 0;
-        frame = requestAnimationFrame(render);
-      } else {
-        cancelAnimationFrame(frame);
-      }
-    };
-
-    resize();
-    window.addEventListener("resize", resize, { passive: true });
-    document.addEventListener("visibilitychange", onVisibility);
-    if (!reducedMotion) frame = requestAnimationFrame(render);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("resize", resize);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, []);
-
-  return <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 opacity-60" />;
+type Ember={x:number;y:number;vx:number;vy:number;r:number;a:number;phase:number};
+type Cloud={x:number;y:number;vx:number;radius:number;alpha:number;green:boolean};
+export default function FogCanvas(){
+ const ref=useRef<HTMLCanvasElement|null>(null);
+ useEffect(()=>{
+  const canvas=ref.current,ctx=canvas?.getContext("2d",{alpha:true});if(!canvas||!ctx)return;
+  const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches,mobile=window.matchMedia("(max-width:640px)").matches;
+  let w=0,h=0,dpr=1,raf=0,last=0,visible=!document.hidden;
+  const embers:Ember[]=Array.from({length:mobile?16:34},()=>({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.00035,vy:-(.00018+Math.random()*.00045),r:.7+Math.random()*1.5,a:.16+Math.random()*.3,phase:Math.random()*6.28}));
+  const clouds:Cloud[]=Array.from({length:mobile?4:7},(_,i)=>({x:Math.random(),y:.15+Math.random()*.8,vx:(i%2?1:-1)*(.00008+Math.random()*.00012),radius:.16+Math.random()*.2,alpha:.035+Math.random()*.035,green:i%3!==0}));
+  const resize=()=>{dpr=Math.min(window.devicePixelRatio||1,1.35);w=window.innerWidth;h=window.innerHeight;canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);canvas.style.width=w+"px";canvas.style.height=h+"px";ctx.setTransform(dpr,0,0,dpr,0,0);};
+  const render=(time:number)=>{if(!visible)return;if(time-last<40){raf=requestAnimationFrame(render);return;}last=time;ctx.clearRect(0,0,w,h);
+   const base=ctx.createRadialGradient(w*.52,h*.35,0,w*.52,h*.4,Math.max(w,h)*.85);base.addColorStop(0,"rgba(11,42,26,.28)");base.addColorStop(.5,"rgba(6,18,12,.18)");base.addColorStop(1,"rgba(5,8,6,0)");ctx.fillStyle=base;ctx.fillRect(0,0,w,h);
+   for(const c of clouds){if(!reduced){c.x+=c.vx;if(c.x<-.3)c.x=1.3;if(c.x>1.3)c.x=-.3;}const x=c.x*w,y=c.y*h,r=c.radius*Math.max(w,h),g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,c.green?"rgba(16,185,129,"+c.alpha+")":"rgba(0,255,102,"+(c.alpha*.6)+")");g.addColorStop(.55,"rgba(5,45,25,"+(c.alpha*.45)+")");g.addColorStop(1,"rgba(5,8,6,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}
+   for(const e of embers){if(!reduced){e.x+=e.vx+Math.sin(e.phase)*.00015;e.y+=e.vy;e.phase+=.025;if(e.y<-.02){e.y=1.02;e.x=Math.random();}}const x=e.x*w,y=e.y*h,a=e.a*(.7+.3*Math.sin(e.phase)),r=e.r,g=ctx.createRadialGradient(x,y,0,x,y,r*5);g.addColorStop(0,"rgba(0,255,102,"+a+")");g.addColorStop(.45,"rgba(16,185,129,"+(a*.4)+")");g.addColorStop(1,"rgba(0,255,102,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r*5,0,Math.PI*2);ctx.fill();ctx.fillStyle="rgba(220,255,235,"+a+")";ctx.beginPath();ctx.arc(x,y,r*.55,0,Math.PI*2);ctx.fill();}
+   if(!reduced)raf=requestAnimationFrame(render);
+  };
+  const visibility=()=>{visible=!document.hidden;if(visible){last=0;if(!reduced)raf=requestAnimationFrame(render);}else cancelAnimationFrame(raf);};
+  resize();window.addEventListener("resize",resize,{passive:true});document.addEventListener("visibilitychange",visibility);render(0);
+  return()=>{cancelAnimationFrame(raf);window.removeEventListener("resize",resize);document.removeEventListener("visibilitychange",visibility);};
+ },[]);
+ return <canvas ref={ref} aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 h-full w-full"/>;
 }
