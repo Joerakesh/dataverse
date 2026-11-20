@@ -4,6 +4,7 @@ import Admin from "@/models/Admin";
 import Event from "@/models/Event";
 import { hashPassword } from "@/src/lib/password";
 import { requirePermission } from "@/src/lib/authorization";
+import { getEventRegistrationSettings } from "@/src/lib/event-registration-settings";
 
 const schema = z.object({
   name: z.string().trim().min(2).max(100),
@@ -16,12 +17,15 @@ export async function GET() {
   await connection();
   try {
     await requirePermission("coordinators:manage");
-    const coordinators = await Admin.find({ role: "event_manager" })
-      .select("name email role assignedEventIds isActive createdAt")
-      .populate("assignedEventIds", "name slug")
-      .sort({ createdAt: -1 })
-      .lean();
-    return NextResponse.json({ success: true, coordinators });
+    const [coordinators, events] = await Promise.all([
+      Admin.find({ role: "event_manager" })
+        .select("name email role assignedEventIds isActive createdAt")
+        .populate("assignedEventIds", "name slug")
+        .sort({ createdAt: -1 })
+        .lean(),
+      getEventRegistrationSettings(),
+    ]);
+    return NextResponse.json({ success: true, coordinators, events });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") return NextResponse.json({ success: false, message: "Authentication required." }, { status: 401 });
     if (error instanceof Error && error.message === "FORBIDDEN") return NextResponse.json({ success: false, message: "You do not have permission to manage coordinators." }, { status: 403 });
