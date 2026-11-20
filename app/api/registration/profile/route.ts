@@ -29,6 +29,7 @@ const editSchema = z.object({
   college: z.string().trim().min(2).max(180),
   city: z.string().trim().min(2).max(100),
   department: z.string().trim().min(2).max(120),
+  registerNumber: z.string().trim().min(1).max(60),
 });
 
 function publicParticipant(participant: {
