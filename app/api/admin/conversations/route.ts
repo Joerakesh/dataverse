@@ -1,6 +1,5 @@
 import { connection, NextResponse } from "next/server";
 import ChatConversation from "@/models/ChatConversation";
-import "@/models/Participant";
 import { requirePermission } from "@/src/lib/authorization";
 
 export async function GET(request: Request) {
@@ -11,13 +10,36 @@ export async function GET(request: Request) {
     const page = Math.max(1, Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1);
     const limit = Math.min(50, Math.max(1, Number.parseInt(url.searchParams.get("limit") ?? "20", 10) || 20));
     const [items, total] = await Promise.all([
-      ChatConversation.find({})
-        .select("conversationId participantId messages lastMessageAt createdAt updatedAt")
-        .populate("participantId", "name email mobile college registerNumber")
-        .sort({ updatedAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .lean(),
+      ChatConversation.aggregate([
+        { $sort: { updatedAt: -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        {
+          $lookup: {
+            from: "participants",
+            localField: "participantId",
+            foreignField: "_id",
+            as: "participantRecord",
+          },
+        },
+        { $unwind: { path: "$participantRecord", preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            conversationId: 1,
+            lastMessageAt: 1,
+            updatedAt: 1,
+            messageCount: { $size: { $ifNull: ["$messages", []] } },
+            preview: { $ifNull: [{ $arrayElemAt: ["$messages.text", -1] }, ""] },
+            participant: {
+              name: "$participantRecord.name",
+              email: "$participantRecord.email",
+              mobile: "$participantRecord.mobile",
+              college: "$participantRecord.college",
+              registerNumber: "$participantRecord.registerNumber",
+            },
+          },
+        },
+      ]),
       ChatConversation.countDocuments({}),
     ]);
 
@@ -26,17 +48,15 @@ export async function GET(request: Request) {
       conversations: items.map((item) => ({
         id: item._id.toString(),
         conversationId: item.conversationId,
-        participant: item.participantId && typeof item.participantId === "object" && "name" in item.participantId
-          ? {
-              name: item.participantId.name,
-              email: "email" in item.participantId ? item.participantId.email : "",
-              mobile: "mobile" in item.participantId ? item.participantId.mobile : "",
-              college: "college" in item.participantId ? item.participantId.college : "",
-              registerNumber: "registerNumber" in item.participantId ? item.participantId.registerNumber : "",
-            }
-          : null,
-        messageCount: item.messages.length,
-        preview: item.messages.at(-1)?.text ?? "",
+        participant: item.participant?.name ? {
+          name: item.participant.name,
+          email: item.participant.email ?? "",
+          mobile: item.participant.mobile ?? "",
+          college: item.participant.college ?? "",
+          registerNumber: item.participant.registerNumber ?? "",
+        } : null,
+        messageCount: item.messageCount,
+        preview: item.preview,
         lastMessageAt: item.lastMessageAt,
         updatedAt: item.updatedAt,
       })),
