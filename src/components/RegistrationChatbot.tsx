@@ -193,7 +193,7 @@ export default function RegistrationChatbot() {
         keepalive: true,
         body: JSON.stringify({
           conversationId,
-          messages: messages.slice(-200).map((message) => ({ id: message.id, role: message.role, text: message.text })),
+          messages: messages.slice(-500).map((message) => ({ id: message.id, role: message.role, text: message.text })),
         }),
       }).catch(() => undefined);
     }, 400);
