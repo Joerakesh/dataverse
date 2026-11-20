@@ -70,8 +70,10 @@ export async function createOrFindParticipant(input: {
   const collegeKey = normalizeKey(input.college);
   const departmentKey = normalizeKey(input.department);
   const registerNumber = normalizeRegisterNumber(input.registerNumber);
-  const existing = await Participant.findOne({ mobile });
-  const rollNumberOwner = await Participant.findOne({ collegeKey, registerNumber }).select("_id").lean();
+  const [existing, rollNumberOwner] = await Promise.all([
+    Participant.findOne({ mobile }),
+    Participant.findOne({ collegeKey, registerNumber }).select("_id").lean(),
+  ]);
   if (rollNumberOwner && (!existing || rollNumberOwner._id.toString() !== existing._id.toString())) {
     return { error: "This college register number is already linked to another participant." } as const;
   }
