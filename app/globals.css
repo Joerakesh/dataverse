@@ -162,3 +162,18 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Cinematic homepage surface polish */
+@media (min-width: 1024px) {
+  .doom-card {
+    backdrop-filter: blur(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doom-card,
+  .btn-avengers {
+    transition-duration: 0.01ms !important;
+  }
+}

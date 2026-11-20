@@ -2,6 +2,7 @@
 
 import React, { useCallback, useState } from "react";
 import DoomsdayPreloader from "@/src/components/DoomsdayPreloader";
+import FogCanvas from "@/src/components/FogCanvas";
 import Navbar from "@/src/components/Navbar";
 import Hero from "@/src/components/Hero";
 import StatsBar from "@/src/components/StatsBar";
@@ -20,8 +21,9 @@ export default function Home() {
 
   return (
     <>
+      <FogCanvas />
       {!loadingComplete && <DoomsdayPreloader onComplete={completeLoading}/>}
-      <main className="min-h-screen bg-[#04070a] text-slate-100 flex flex-col relative selection:bg-emerald-500 selection:text-black">
+      <main className="relative z-10 min-h-screen bg-[#04070a] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-black">
         <Navbar/>
         <Hero/>
         <StatsBar/>

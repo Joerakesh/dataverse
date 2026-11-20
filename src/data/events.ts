@@ -258,7 +258,7 @@ export const SYMPOSIUM_EVENTS: SymposiumEvent[] = [
     category: "Technical",
     tagline: "Connections",
     description: "Connect images, words, letters and fragments to identify technical and data-related terms.",
-    character: { name: "Groot", alias: "Groot", image: "/images/characters/groot.jpg", color: "from-lime-600 to-emerald-950" },
+    character: { name: "Tony Stark", alias: "Iron Man", image: "/images/characters/iron-man.jpg", color: "from-amber-500 to-red-950" },
     teamSize: "Exactly 2 Members",
     minTeam: 2,
     maxTeam: 2,

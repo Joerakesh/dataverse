@@ -10,10 +10,10 @@ export default function StatsBar() {
   ];
 
   return (
-    <section className="relative z-20 -mt-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <section className="relative z-20 -mt-5 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         {stats.map((stat, index) => (
-          <div key={index} className="doom-card rounded-xl p-6 flex flex-col items-center text-center border border-emerald-500/25 relative overflow-hidden">
+          <div key={index} className="doom-card relative flex flex-col items-center overflow-hidden rounded-xl border border-emerald-400/15 bg-[#07100c]/90 p-4 text-center sm:p-6">
             <div className="mb-3 p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/20">{stat.icon}</div>
             <span className="font-avengers text-3xl sm:text-4xl text-avengers-chrome italic">{stat.value}</span>
             <span className="font-tech text-xs sm:text-sm text-emerald-400 font-bold uppercase tracking-wider mt-1">{stat.label}</span>
