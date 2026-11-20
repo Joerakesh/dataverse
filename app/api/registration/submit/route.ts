@@ -114,6 +114,10 @@ export async function POST(request: Request) {
     if (new Set(emailAddresses).size !== emailAddresses.length) {
       return NextResponse.json({ success: false, message: "Each team member must have a different email address." }, { status: 400 });
     }
+    const registerNumbers = membersWithDetails.map((member) => member.registerNumber);
+    if (new Set(registerNumbers).size !== registerNumbers.length) {
+      return NextResponse.json({ success: false, message: "Each team member must have a different college register number." }, { status: 400 });
+    }
 
     const participantResults = await Promise.all(membersWithDetails.map((member) =>
       createOrFindParticipant({
@@ -186,7 +190,7 @@ export async function POST(request: Request) {
       }
     }
 
-    for (const member of resolvedMembers) {
+    const reservationResults = await Promise.all(resolvedMembers.map(async (member) => {
       const updated = await Participant.findOneAndUpdate(
         {
           _id: member.participantId,
@@ -196,16 +200,22 @@ export async function POST(request: Request) {
         { $addToSet: { eventSlugs: event.slug } },
         { returnDocument: "after" },
       );
+      if (updated) return { member, updated: true as const };
 
-      if (!updated) {
-        const current = await Participant.findById(member.participantId).select("eventSlugs").lean();
-        const alreadyInEvent = current?.eventSlugs?.includes(event.slug);
-        throw new Error(alreadyInEvent
-          ? "DUPLICATE_EVENT_MEMBER:" + member.name
-          : "EVENT_LIMIT_REACHED:" + member.name);
-      }
+      const current = await Participant.findById(member.participantId).select("eventSlugs").lean();
+      return {
+        member,
+        updated: false as const,
+        error: current?.eventSlugs?.includes(event.slug) ? "DUPLICATE_EVENT_MEMBER:" : "EVENT_LIMIT_REACHED:",
+      };
+    }));
+    claimedParticipantIds = reservationResults
+      .filter((result) => result.updated)
+      .map((result) => result.member.participantId.toString());
 
-      claimedParticipantIds.push(member.participantId.toString());
+    const failedReservation = reservationResults.find((result) => !result.updated);
+    if (failedReservation && !failedReservation.updated) {
+      throw new Error(failedReservation.error + failedReservation.member.name);
     }
 
     const registration = await EventRegistration.create({
