@@ -12,6 +12,9 @@ const permissions: Record<Section, string> = {
   conversations: "conversations:view",
 };
 
+// This authenticated, database-backed route must render dynamically rather than prerender.
+export const instant = false;
+
 export const metadata = {
   title: "Admin Management | DATAVERSE 2K26",
   robots: { index: false, follow: false },
