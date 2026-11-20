@@ -6,16 +6,9 @@ import { sounds } from "@/src/utils/soundEffects";
 
 interface Props { onComplete: () => void }
 
-const STATUS = [
-  "SYNCHRONIZING THE MULTIVERSE...",
-  "STABILIZING THE EMERALD ENERGY FIELD...",
-  "OPENING THE DOOMSDAY PROTOCOL...",
-  "SUMMONING THE GUARDIAN...",
-  "DATAVERSE 2K26 · SYSTEM ONLINE",
-];
+const STATUS = "04 DECEMBER 2026 · CENTENARY BUILDING";
 
 export default function DoomsdayPreloader({ onComplete }: Props) {
-  const [status, setStatus] = useState(0);
   const [exiting, setExiting] = useState(false);
   const reduced = useReducedMotion();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -85,9 +78,7 @@ export default function DoomsdayPreloader({ onComplete }: Props) {
   useEffect(() => {
     sounds.playDoomsdaySurge();
     if (reduced) { timers.current.push(window.setTimeout(finish, 700)); return; }
-    const interval = window.setInterval(() => setStatus(v => Math.min(v + 1, STATUS.length - 1)), 560);
-    timers.current.push(window.setTimeout(finish, 3100));
-    return () => window.clearInterval(interval);
+    timers.current.push(window.setTimeout(finish, 1550));
   }, [finish, reduced]);
 
   return (
@@ -158,9 +149,8 @@ export default function DoomsdayPreloader({ onComplete }: Props) {
             </div>
 
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .9, duration: .55 }} className="relative z-20 flex w-full flex-col items-center">
-              <img src="/images/logo.png" alt="DATAVERSE" className="h-auto max-h-14 w-[min(78vw,20rem)] object-contain drop-shadow-[0_0_25px_rgba(0,255,102,.65)] sm:max-h-16" />
-              <p className="mt-1 font-avengers text-xl italic tracking-[.28em] text-emerald-400 sm:text-2xl">2K26</p>
-              <p className="mt-3 min-h-5 max-w-full px-2 font-tech text-[9px] font-bold uppercase tracking-[.12em] text-emerald-300 sm:text-xs sm:tracking-[.2em]">{STATUS[status]}</p>
+              <p className="reference-metallic-title font-doom text-3xl font-extrabold tracking-[.22em] sm:text-4xl">DATAVERSE</p>
+              <p className="mt-2 font-mono text-[10px] tracking-[.3em] text-emerald-300 sm:text-xs">{STATUS}</p>
               <button type="button" onClick={() => { sounds.playClick(); finish(); }} className="mt-5 rounded-full border border-emerald-400/35 bg-black/40 px-5 py-2 text-[9px] font-bold tracking-[.25em] text-slate-400 transition-colors hover:border-emerald-300 hover:text-emerald-200 sm:text-[10px]">[ ENTER THE MULTIVERSE ]</button>
             </motion.div>
           </div>
