@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { Zap, Sparkles, Shield, Compass, RotateCw } from "lucide-react";
 import { sounds } from "@/src/utils/soundEffects";
+
+const Artifact3D = dynamic(() => import("@/src/components/Artifact3D"), { ssr: false });
 
 interface HeroCoreTheme {
   id: string;
@@ -138,7 +141,6 @@ export default function CosmicTesseract() {
     let angleZW = 0;
     let angleXW = 0;
     let angleYZ = 0;
-    let artifactAngle = 0; // Rotates the hero artifact inside
 
     let mouseX = 0;
     let mouseY = 0;
@@ -464,7 +466,6 @@ export default function CosmicTesseract() {
       angleZW += speed * 0.9 + mouseX * 0.01;
       angleYZ += speed * 0.7;
       angleXY += speed * 0.5;
-      artifactAngle += speed * 1.8; // Rotating artifact speed
 
       const scale = Math.min(width, height) * 0.28;
       const distance4D = 2.5;
@@ -500,10 +501,8 @@ export default function CosmicTesseract() {
       ctx.fillStyle = radial;
       ctx.fillRect(0, 0, width, height);
 
-      // 1. Draw Rotating Hero Artifact at Center of Hypercube
-      drawHeroArtifact(width / 2, height / 2, artifactAngle);
-
-      // 2. Draw Tesseract Edges
+      // Draw the tesseract edges behind the interactive Three.js artifact.
+      // 1. Draw Tesseract Edges
       edges.forEach(([i, j]) => {
         const [x1, y1, z1] = projected2D[i];
         const [x2, y2, z2] = projected2D[j];
@@ -522,7 +521,7 @@ export default function CosmicTesseract() {
         ctx.stroke();
       });
 
-      // 3. Draw Vertices Nodes
+      // 2. Draw Vertices Nodes
       projected2D.forEach(([x, y, z]) => {
         const alpha = Math.max(0.3, Math.min(1, (z + 1.2) / 2));
         ctx.beginPath();
@@ -621,11 +620,12 @@ export default function CosmicTesseract() {
             
             {/* Canvas */}
             <canvas ref={canvasRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
+            <Artifact3D themeId={activeTheme.id} primaryColor={activeTheme.primaryColor} accentColor={activeTheme.accentColor} />
 
             {/* Overlay HUD Markers */}
             <div className="absolute top-5 left-5 pointer-events-none">
               <span className="text-[10px] font-tech font-bold uppercase tracking-widest text-slate-400 block">
-                ROTATING ARTIFACT DETECTED
+                LIVE 3D ARTIFACT
               </span>
               <span className="font-avengers text-2xl italic tracking-wide text-slate-100 block">
                 {activeTheme.artifactName}
@@ -675,7 +675,7 @@ export default function CosmicTesseract() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">ARTIFACT ROTATION:</span>
-                  <span className="text-slate-200">REAL-TIME 3D PERSPECTIVE</span>
+                  <span className="text-slate-200">THREE.JS RENDER</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">QUANTUM FREQUENCY:</span>
