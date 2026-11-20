@@ -163,7 +163,7 @@ export const SYMPOSIUM_EVENTS: SymposiumEvent[] = [
     category: "Technical",
     tagline: "Shark Tank",
     description: "Pitch an original, technology-based business idea. Explain the problem, solution, target market, revenue model and estimated investment.",
-    character: { name: "Tony Stark", alias: "Iron Man", image: "/images/characters/iron-man.jpg", color: "from-amber-600 to-red-950" },
+    character: { name: "Loki", alias: "God of Mischief", image: "/images/characters/Loki.jpg", color: "from-emerald-600 to-green-950" },
     teamSize: "2–3 Members",
     minTeam: 2,
     maxTeam: 3,
