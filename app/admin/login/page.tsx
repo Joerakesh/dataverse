@@ -23,7 +23,9 @@ function AdminLoginLoading() {
 async function AdminLoginContent() {
   await connection();
   const current = await getCurrentAccount();
-  if (current?.accountType === "admin") redirect("/admin");
+  if (current?.accountType === "admin") {
+    redirect(current.account.role === "event_manager" ? "/admin/manage/registrations" : "/admin");
+  }
   return <AdminLogin/>;
 }
 
