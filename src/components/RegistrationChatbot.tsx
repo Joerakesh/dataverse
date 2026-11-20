@@ -447,7 +447,7 @@ export default function RegistrationChatbot() {
       name: member.name.trim(),
       mobile: normalizeTeamMobile(member.mobile),
       email: member.email.trim().toLowerCase(),
-      registerNumber: member.registerNumber.trim().toUpperCase(),
+      registerNumber: member.registerNumber.trim().replace(/\s+/g, " ").toUpperCase(),
     }));
     if (cleaned.some((member) => !member.name || !/^\d{10}$/.test(member.mobile) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(member.email) || !/^[A-Z0-9][A-Z0-9./ -]{0,59}$/.test(member.registerNumber))) {
       setError("Enter a name, valid register number, valid mobile number and valid email address for every team member.");
@@ -459,6 +459,10 @@ export default function RegistrationChatbot() {
     }
     if (new Set(cleaned.map((member) => member.email)).size !== cleaned.length) {
       setError("Each team member must have a different email address.");
+      return;
+    }
+    if (new Set(cleaned.map((member) => member.registerNumber)).size !== cleaned.length) {
+      setError("Each team member must have a different college register number.");
       return;
     }
 
@@ -794,10 +798,10 @@ export default function RegistrationChatbot() {
                   <input
                     value={answer}
                     onChange={(event) => setAnswer(event.target.value)}
-                    type={step === 4 ? "tel" : step === 5 ? "email" : "text"}
-                    inputMode={step === 4 ? "tel" : step === 5 ? "email" : "text"}
-                    maxLength={step === 4 ? 14 : step === 5 ? 254 : 180}
-                    placeholder={step === 4 ? "10-digit mobile number" : step === 5 ? "name@example.com" : "Type your answer..."}
+                    type={step === 5 ? "tel" : step === 6 ? "email" : "text"}
+                    inputMode={step === 5 ? "tel" : step === 6 ? "email" : "text"}
+                    maxLength={step === 5 ? 14 : step === 6 ? 254 : 180}
+                    placeholder={step === 4 ? "College register number / roll number" : step === 5 ? "10-digit mobile number" : step === 6 ? "name@example.com" : "Type your answer..."}
                     className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-[#070d11] px-4 py-3 text-sm font-tech text-slate-100 placeholder:text-slate-600 outline-none focus:border-emerald-500"
                     disabled={busy}
                     autoComplete="off"
