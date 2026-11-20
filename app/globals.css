@@ -177,3 +177,51 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Reference-inspired cinematic entry sequence */
+@keyframes doom-intro-drop {
+  0% { opacity: 0; transform: translate3d(0, -38vh, 0) scale(.68); }
+  72% { opacity: 1; transform: translate3d(0, 1.5vh, 0) scale(1.04); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+@keyframes doom-intro-ring {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes doom-intro-ring-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+@keyframes doom-intro-shockwave {
+  0% { opacity: .85; transform: scale(.16); }
+  100% { opacity: 0; transform: scale(3.2); }
+}
+@keyframes doom-intro-beam {
+  0% { opacity: 0; transform: translateX(-50%) scaleY(0); }
+  35% { opacity: .8; transform: translateX(-50%) scaleY(1); }
+  100% { opacity: 0; transform: translateX(-50%) scaleY(.4); }
+}
+.doom-intro-portrait {
+  animation: doom-intro-drop 850ms cubic-bezier(.22,1,.36,1) both;
+}
+.doom-intro-ring { animation: doom-intro-ring 9s linear infinite; }
+.doom-intro-ring-reverse { animation: doom-intro-ring-reverse 13s linear infinite; }
+.doom-intro-shockwave { animation: doom-intro-shockwave 900ms cubic-bezier(.16,1,.3,1) 320ms both; }
+.doom-intro-shockwave-delay { animation-delay: 480ms; }
+.doom-intro-beam {
+  transform-origin: top center;
+  animation: doom-intro-beam 1100ms ease-out both;
+}
+@media (max-width: 380px) {
+  .font-avengers { letter-spacing: .045em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .doom-intro-portrait,
+  .doom-intro-ring,
+  .doom-intro-ring-reverse,
+  .doom-intro-shockwave,
+  .doom-intro-beam {
+    animation: none !important;
+  }
+}
