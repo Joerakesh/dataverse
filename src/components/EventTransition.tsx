@@ -22,7 +22,7 @@ export default function EventTransition({ event, onComplete }: EventTransitionPr
     <motion.div
       role="dialog"
       aria-modal="true"
-      aria-label={`Entering ${event.title}`}
+      aria-label={`Entering ${event.name}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden bg-[#020508]/[.98] px-5 py-10"
@@ -54,8 +54,8 @@ export default function EventTransition({ event, onComplete }: EventTransitionPr
           <img src={event.character.image} alt={event.character.alias} className="h-full w-full object-cover object-top" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#020508] via-transparent to-[#020508]/20" />
           <div className="absolute inset-x-0 bottom-0 p-4 text-left">
-            <span className="text-[9px] font-tech font-bold uppercase tracking-[.24em] text-emerald-300">{event.number} · {event.category}</span>
-            <p className="mt-1 font-avengers text-2xl tracking-wider text-white">{event.title}</p>
+            <span className="text-[9px] font-tech font-bold uppercase tracking-[.24em] text-emerald-300">{event.id.padStart(2, "0")} · {event.category}</span>
+            <p className="mt-1 font-avengers text-2xl tracking-wider text-white">{event.name}</p>
             <p className="mt-0.5 text-[10px] font-tech text-slate-300">{event.character.alias}</p>
           </div>
         </div>
