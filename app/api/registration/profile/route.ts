@@ -76,7 +76,7 @@ export async function POST(request: Request) {
 
     const parsed = schema.safeParse(await request.json());
     if (!parsed.success) {
-      return NextResponse.json({ success: false, message: "Please check all your details, including your email address.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Please check all your details, including your college register number and email address.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
     let mobile: string;
@@ -96,6 +96,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: result.error }, { status: 409 });
     }
 
+    await EventRegistration.updateMany(
+      { "members.participantId": result.participant._id },
+      { $set: { "members.$[member].registerNumber": result.participant.registerNumber } },
+      { arrayFilters: [{ "member.participantId": result.participant._id }] },
+    );
     await createRegistrationFlow(result.participant._id.toString());
     // Person ID is deliberately not returned to the public registration client.
     return NextResponse.json({
@@ -120,7 +125,7 @@ export async function PUT(request: Request) {
 
     const parsed = editSchema.safeParse(await request.json());
     if (!parsed.success) {
-      return NextResponse.json({ success: false, message: "Please check all your profile details, including your email address.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Please check all your profile details, including your college register number and email address.", errors: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
     const email = normalizeRegistrationEmail(parsed.data.email);
