@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import DoomsdayPreloader from "@/src/components/DoomsdayPreloader";
 import Navbar from "@/src/components/Navbar";
 import Hero from "@/src/components/Hero";
@@ -16,10 +16,11 @@ import Footer from "@/src/components/Footer";
 
 export default function Home() {
   const [loadingComplete, setLoadingComplete] = useState(false);
+  const completeLoading = useCallback(() => setLoadingComplete(true), []);
 
   return (
     <>
-      {!loadingComplete && <DoomsdayPreloader onComplete={() => setLoadingComplete(true)}/>}
+      {!loadingComplete && <DoomsdayPreloader onComplete={completeLoading}/>}
       <main className="min-h-screen bg-[#04070a] text-slate-100 flex flex-col relative selection:bg-emerald-500 selection:text-black">
         <Navbar/>
         <Hero/>

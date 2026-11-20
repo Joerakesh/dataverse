@@ -94,6 +94,8 @@ export default function RegistrationChatbot() {
   const [hydrated, setHydrated] = useState(false);
   const [conversationId, setConversationId] = useState("");
   const chatScrollRef = useRef<HTMLDivElement>(null);
+  const previousMessageCountRef = useRef(0);
+  const chatScrollInitializedRef = useRef(false);
 
   const addMessage = useCallback((role: ChatMessage["role"], text: string) => {
     setMessages((current) => [...current, makeMessage(role, text)]);
@@ -199,10 +201,23 @@ export default function RegistrationChatbot() {
   }, [conversationId, hydrated, messages]);
 
   useEffect(() => {
+    if (!hydrated) return;
+
+    // Ignore the initial/restored transcript. Only follow genuinely new messages;
+    // changing modes, event cards, or autocomplete suggestions must not move the view.
+    if (!chatScrollInitializedRef.current) {
+      previousMessageCountRef.current = messages.length;
+      chatScrollInitializedRef.current = true;
+      return;
+    }
+
+    const hasNewMessage = messages.length > previousMessageCountRef.current;
+    previousMessageCountRef.current = messages.length;
+    if (!hasNewMessage) return;
+
     const viewport = chatScrollRef.current;
-    if (!viewport) return;
-    viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
-  }, [messages, mode, events, suggestions]);
+    if (viewport) viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+  }, [messages, hydrated]);
 
   useEffect(() => {
     if (mode !== "chat" || step !== 0 || answer.trim().length < 2) {
