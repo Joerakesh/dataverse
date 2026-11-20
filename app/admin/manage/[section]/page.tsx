@@ -2,7 +2,6 @@ import { connection } from "next/server";
 import { notFound, redirect } from "next/navigation";
 import AdminSection from "@/src/components/AdminSection";
 import { getCurrentAccount } from "@/src/lib/auth";
-import { requirePermission } from "@/src/lib/authorization";
 
 type Section = "events" | "registrations" | "users" | "coordinators" | "conversations";
 const permissions: Record<Section, string> = {
@@ -27,9 +26,8 @@ export default async function AdminManagementPage({ params }: { params: Promise<
 
   const current = await getCurrentAccount();
   if (!current || current.accountType !== "admin") redirect("/admin/login");
-  try {
-    await requirePermission(permissions[section]);
-  } catch {
+  const accountPermissions = current.account.permissions ?? [];
+  if (current.account.role !== "superadmin" && !accountPermissions.includes("*") && !accountPermissions.includes(permissions[section])) {
     redirect("/admin");
   }
 
