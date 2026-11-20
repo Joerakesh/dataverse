@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { SYMPOSIUM_EVENTS, SymposiumEvent } from "@/src/data/events";
 import { CheckCircle2, ChevronRight, Phone, Sparkles, Users, X } from "lucide-react";
