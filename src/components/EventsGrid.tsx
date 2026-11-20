@@ -32,12 +32,12 @@ export default function EventsGrid() {
     <section id="events" className="relative overflow-hidden border-y border-emerald-400/10 bg-[#04070a]/85 py-20 sm:py-28">
       <div className="pointer-events-none absolute -left-40 top-1/4 h-[520px] w-[520px] rounded-full bg-emerald-400/[0.08] blur-[150px]"/>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="mx-auto mb-14 max-w-4xl text-center">
+        <div className="mb-10 flex flex-col gap-4 text-left sm:mb-12 sm:flex-row sm:items-end sm:justify-between">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-emerald-950/70 border border-emerald-500/30 text-emerald-400 text-xs font-tech font-bold uppercase tracking-widest mb-3">
             <Sparkles size={14}/><span>8 official events</span>
           </div>
-          <h2 className="font-avengers text-5xl italic tracking-[0.08em] text-avengers-chrome sm:text-7xl">CHOOSE YOUR TRIAL</h2>
-          <p className="font-tech text-base sm:text-lg text-slate-400 mt-2">Explore the DATAVERSE 2K26 events and read the rules before registering through the chatbot.</p>
+          <h2 className="font-doom text-3xl font-bold tracking-wide text-white sm:text-4xl">Symposium Events</h2>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-400">Tap an event card to launch its character transition and explore the event rules, rounds and coordinators.</p>
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mt-8">
             {["All", "Technical", "Non-Technical"].map((tab) => (
               <button key={tab} onClick={() => { sounds.playHover(); setActiveTab(tab); }} className={"font-avengers text-lg sm:text-xl tracking-wider px-6 py-2 rounded-lg transition-all " + (activeTab === tab ? "bg-gradient-to-r from-emerald-500 to-green-600 text-black shadow-[0_0_15px_rgba(0,255,136,0.4)]" : "bg-slate-900/90 text-slate-300 border border-emerald-500/20 hover:border-emerald-500/50 hover:text-emerald-300")}>
@@ -47,10 +47,10 @@ export default function EventsGrid() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
           {filteredEvents.map((event) => (
             <article key={event.slug} className="group relative flex flex-col overflow-hidden rounded-2xl border border-emerald-400/15 bg-[#07100c]/90 shadow-[0_18px_50px_rgba(0,0,0,.28)] transition-[border-color,transform,box-shadow] duration-300 hover:-translate-y-1 hover:border-emerald-300/50 hover:shadow-[0_22px_60px_rgba(0,255,136,.12)]">
-              <div className="relative h-72 w-full overflow-hidden bg-slate-950 sm:h-80">
+              <div className="relative h-48 w-full overflow-hidden bg-slate-950 sm:h-52">
                 <Image src={event.character.image} alt={event.character.alias} fill className="object-cover object-center brightness-[.88] contrast-[1.08] transition-transform duration-700 ease-out group-hover:scale-[1.06] motion-reduce:transform-none"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-[#05080c] via-[#05080c]/35 to-transparent"/>
                 <div className="absolute top-4 left-4">
