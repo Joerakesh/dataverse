@@ -1,27 +1,44 @@
 import Event from "@/models/Event";
 import { SYMPOSIUM_EVENTS } from "@/src/data/events";
 
+let ensurePromise: Promise<void> | null = null;
+let ensureExpiresAt = 0;
+
 export async function ensureEventRegistrationSettings() {
-  await Promise.all(SYMPOSIUM_EVENTS.map((item) => Event.findOneAndUpdate(
-    { slug: item.slug },
-    {
-      $setOnInsert: {
-        name: item.name + " - " + item.tagline,
-        slug: item.slug,
-        category: item.category,
-        shortDescription: item.description.slice(0, 240),
-        description: item.description,
-        rules: item.rules,
-        teamSize: { min: item.minTeam, max: item.maxTeam },
-        venue: item.venue,
-        registrationOpen: true,
-        status: "published",
-        image: item.character.image,
-        displayOrder: Number(item.id),
+  if (ensurePromise && Date.now() < ensureExpiresAt) return ensurePromise;
+
+  ensureExpiresAt = Date.now() + 60_000;
+  ensurePromise = Event.bulkWrite(
+    SYMPOSIUM_EVENTS.map((item) => ({
+      updateOne: {
+        filter: { slug: item.slug },
+        update: {
+          $setOnInsert: {
+            name: item.name + " - " + item.tagline,
+            slug: item.slug,
+            category: item.category,
+            shortDescription: item.description.slice(0, 240),
+            description: item.description,
+            rules: item.rules,
+            teamSize: { min: item.minTeam, max: item.maxTeam },
+            venue: item.venue,
+            registrationOpen: true,
+            status: "published",
+            image: item.character.image,
+            displayOrder: Number(item.id),
+          },
+        },
+        upsert: true,
       },
-    },
-    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
-  )));
+    })),
+    { ordered: false },
+  ).then(() => undefined).catch((error) => {
+    ensurePromise = null;
+    ensureExpiresAt = 0;
+    throw error;
+  });
+
+  return ensurePromise;
 }
 
 export async function getEventRegistrationSettings() {
