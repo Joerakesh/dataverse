@@ -1,94 +1,35 @@
 import React from "react";
-import Image from "next/image";
-import { Terminal, ShieldAlert, Cpu, Sparkles } from "lucide-react";
+import { Cpu, Terminal, Sparkles } from "lucide-react";
 
 export default function LoreSection() {
   return (
-    <section id="lore" className="py-24 relative overflow-hidden bg-[#070b10] border-y border-emerald-500/20">
-      {/* Background glow */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
-          {/* Left: Dr. Doom Visual & Latverian Seal */}
-          <div className="lg:col-span-5 relative">
-            <div className="relative rounded-2xl overflow-hidden border-2 border-emerald-500/40 shadow-[0_0_40px_rgba(0,255,136,0.25)] group">
-              <img
-                src="/images/characters/doom.jpg"
-                alt="Victor Von Doom"
-                className="w-full h-[460px] object-cover group-hover:scale-105 transition-transform duration-500 filter brightness-95 contrast-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#05080c] via-transparent to-transparent" />
-              
-              <div className="absolute bottom-6 left-6 right-6">
-                <span className="px-3 py-1 rounded bg-emerald-950/80 border border-emerald-500/40 text-[11px] font-tech font-bold uppercase tracking-widest text-emerald-300">
-                  Sovereign Ruler of Latveria
-                </span>
-                <h3 className="font-avengers text-3xl sm:text-4xl text-avengers-chrome italic mt-2">
-                  VICTOR VON DOOM
-                </h3>
-                <p className="font-tech text-xs text-slate-300 mt-1">
-                  Master of Sorcery & High-Order Quantum Engineering
-                </p>
-              </div>
+    <section id="lore" className="relative overflow-hidden border-y border-emerald-500/15 bg-[#070b10] py-20 sm:py-24">
+      <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-emerald-600/[.08] blur-[120px]" />
+      <div className="relative mx-auto grid max-w-7xl gap-10 px-5 sm:px-8 lg:grid-cols-[.8fr_1.2fr] lg:items-center lg:px-10">
+        <div>
+          <div className="mb-4 inline-flex items-center gap-2 font-tech text-xs font-bold uppercase tracking-[.22em] text-emerald-400">
+            <Sparkles size={15} /> The DATAVERSE experience
+          </div>
+          <h2 className="font-avengers text-4xl italic leading-tight tracking-wide text-white sm:text-5xl">
+            THINK BIGGER.<br /><span className="text-emerald-300">BUILD WHAT&apos;S NEXT.</span>
+          </h2>
+        </div>
+        <div className="space-y-6">
+          <p className="max-w-3xl font-tech text-base leading-8 text-slate-300 sm:text-lg">
+            DATAVERSE brings data science, technology and creative problem-solving together. Step into hands-on challenges, share original ideas and test your skills alongside students from across colleges.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-emerald-500/20 bg-slate-950/55 p-5">
+              <Cpu className="mb-3 text-emerald-400" size={21} />
+              <h3 className="mb-2 font-avengers text-xl tracking-wide text-slate-100">TECH & INNOVATION</h3>
+              <p className="font-tech text-xs leading-6 text-slate-400">Build AI agents, present projects, explore data and solve technical challenges.</p>
             </div>
-
-            {/* Accent tag */}
-            <div className="absolute -top-4 -right-4 p-4 rounded-xl bg-slate-900 border border-emerald-400/40 shadow-lg hidden sm:block">
-              <ShieldAlert className="w-8 h-8 text-emerald-400 animate-pulse" />
+            <div className="rounded-xl border border-emerald-500/20 bg-slate-950/55 p-5">
+              <Terminal className="mb-3 text-emerald-400" size={21} />
+              <h3 className="mb-2 font-avengers text-xl tracking-wide text-slate-100">CREATIVE COMPETITION</h3>
+              <p className="font-tech text-xs leading-6 text-slate-400">Take on quizzes, visual puzzles, connections and team-based challenges.</p>
             </div>
           </div>
-
-          {/* Right: The Lore Narrative */}
-          <div className="lg:col-span-7 flex flex-col gap-6">
-            <div className="inline-flex items-center gap-2 text-emerald-400 font-tech uppercase tracking-[0.25em] text-sm font-bold">
-              <Sparkles size={16} />
-              <span>THE LATVERIAN PROTOCOL</span>
-            </div>
-
-            <h2 className="font-avengers text-4xl sm:text-6xl text-avengers-chrome italic tracking-wider leading-none">
-              WHERE AVENGERS VALOR MEETS DOOM&apos;S SUPREME INTELLECT
-            </h2>
-
-            <p className="font-tech text-lg text-slate-300 leading-relaxed">
-              In the age of explosive AI agents, deep analytics, and unprecedented computing shifts, standard collegiate symposiums are no longer sufficient. Dr. Doom has hijacked the signal to inaugurate <strong className="text-emerald-400">DATAVERSE</strong> — a battleground engineered to separate mere coders from architects of the new digital cosmos.
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-              <div className="doom-card rounded-lg p-5 border border-emerald-500/20">
-                <div className="flex items-center gap-3 mb-2">
-                  <Cpu className="text-emerald-400" size={20} />
-                  <h4 className="font-avengers text-xl text-slate-100 tracking-wide">
-                    SCIENCE & SORCERY
-                  </h4>
-                </div>
-                <p className="font-tech text-xs text-slate-400 leading-relaxed">
-                  Every arena tests both pure computational depth and high-pressure tactical intuition — from Shark Tank pitches to classified agent workflows.
-                </p>
-              </div>
-
-              <div className="doom-card rounded-lg p-5 border border-emerald-500/20">
-                <div className="flex items-center gap-3 mb-2">
-                  <Terminal className="text-emerald-400" size={20} />
-                  <h4 className="font-avengers text-xl text-slate-100 tracking-wide">
-                    THE CHOSEN CITADEL
-                  </h4>
-                </div>
-                <p className="font-tech text-xs text-slate-400 leading-relaxed">
-                  Only one team per department/college may enter each event, except Dark Quest which allows up to two teams per college. Bring your valid College ID and Bonafide Certificate.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <blockquote className="border-l-2 border-emerald-500 pl-4 py-1 italic font-doom text-slate-300 text-sm">
-                &ldquo;Do not disappoint Doom. Register before the deadlines close, or be consigned to the annals of mediocrity.&rdquo;
-              </blockquote>
-            </div>
-
-          </div>
-
         </div>
       </div>
     </section>
