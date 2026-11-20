@@ -225,3 +225,44 @@ body {
     animation: none !important;
   }
 }
+
+
+/* ---- 3D hero transition styles (ported from the DATAVERSE zip) ---- */
+.metallic-title {
+  background: linear-gradient(180deg, #F3F7F5 0%, #C4D1CC 38%, #8E9B97 54%, #586661 78%, #B5C4BE 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 28px rgba(0, 255, 102, 0.35)) drop-shadow(0 6px 18px rgba(0, 0, 0, 0.85));
+}
+
+@keyframes hulk-shake {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  12% { transform: translate3d(-14px, 10px, 0) rotate(-1.2deg); }
+  25% { transform: translate3d(16px, -12px, 0) rotate(1.4deg); }
+  38% { transform: translate3d(-12px, -8px, 0) rotate(-1deg); }
+  52% { transform: translate3d(10px, 10px, 0) rotate(0.8deg); }
+  68% { transform: translate3d(-6px, 5px, 0) rotate(-0.4deg); }
+  84% { transform: translate3d(4px, -4px, 0) rotate(0.2deg); }
+}
+.animate-hulk-shake {
+  animation: hulk-shake 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes lightning-flash {
+  0%, 100% { opacity: 0; }
+  15%, 45% { opacity: 0.95; }
+  30% { opacity: 0.2; }
+  65% { opacity: 0.7; }
+}
+.animate-lightning-flash {
+  animation: lightning-flash 0.5s ease-out forwards;
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-mandala {
+  animation: spin-slow 4s linear infinite;
+}
